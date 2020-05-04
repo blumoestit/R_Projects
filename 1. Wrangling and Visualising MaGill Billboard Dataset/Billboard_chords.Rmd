@@ -6,7 +6,7 @@ date: "4/28/2020"
 output: 
   prettydoc::html_pretty:
     theme: tactile
-    highlight: github
+    #highlight: github
 ---
 
 ## 1. Introduction
@@ -32,6 +32,7 @@ kable(head(bb, 7), caption = "Sample of Billboard chords data table") %>%
           kable_styling(full_width = FALSE, position = "left", bootstrap_options = "striped", font_size = 14)
 ```
 
+
 ### List of Artists
 
 ```{r echo = FALSE, warning = FALSE, message = FALSE}
@@ -51,6 +52,7 @@ datatable(as.data.frame(artists), caption = "Billboard artists and songs data ta
               "}")))
 
 ```
+
 
 ## 2. The most common chords
 <p>As seen in the previous task, this is a <em>tidy</em> dataset: each row represents a single observation, and each column a particular variable or attribute of that observation. Note that the metadata for each song (title, artist, year) is repeated for each chord -- like "I Don't Mind" by James Brown, 1961 -- while the unique attributes of each chord (chord symbol, chord quality, and analytical designations like integer and Roman-numeral notation) is included once for each chord change.</p>

@@ -1,0 +1,292 @@
+---
+title: "Degrees That Pay You Back"
+author: "Magdalena Blum-Oeste"
+date: "`r Sys.Date()`"
+output:
+  prettydoc::html_pretty:
+    theme: architect
+    highlight: github
+---
+
+# 1. Which college majors will pay the bills?
+Wondering if that Philosophy major will really help you pay the bills? Think you're set with an Engineering degree? Choosing a college major is a complex decision evaluating personal interest, difficulty, and career prospects. Your first paycheck right out of college might say a lot about your salary potential by mid-career. Whether you're in school or navigating the postgrad world, join me as we explore the short and long term financial implications of this major decision.
+
+In this notebook, we'll be using data collected from a year-long survey of 1.2 million people with only a bachelor's degree by PayScale Inc., made available [here](http://online.wsj.com/public/resources/documents/info-Degrees_that_Pay_you_Back-sort.html?mod=article_inline) by the Wall Street Journal for their article [Ivy League's Big Edge: Starting Pay](https://www.wsj.com/articles/SB121746658635199271). After doing some data clean up, we'll compare the recommendations from three different methods for determining the optimal number of clusters, apply a k-means clustering analysis, and visualize the results.
+
+To begin, let's prepare by loading the following packages: tidyverse, dplyr, readr, ggplot2, cluster, and factoextra. We'll then import the data from degrees-that-pay-back.csv (which is stored in a folder called datasets), and take a quick look at what we're working with.
+
+```{r setup, include = FALSE}
+# Load relevant packages
+library(pacman)
+p_load(tidyr, dplyr, readr, ggplot2, cluster, factoextra, XML, rvest, janitor, kableExtra)
+```
+
+<br>
+**Sample of the "Salary Increase By Major" table**
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+# Scraping data from wsj webpage
+
+url <-  "http://online.wsj.com/public/resources/documents/info-Degrees_that_Pay_you_Back-sort.html?mod=article_inline"
+for_table <- read_html(url)
+wsj_table <- for_table %>% 
+              html_nodes("table") %>% 
+              html_table(fill = TRUE)
+
+wsj_degrees <- wsj_table[[6]]
+wsj_degrees <- wsj_degrees[-1, 1:8] 
+names(wsj_degrees) <- wsj_degrees[1, ]
+wsj_degrees <- wsj_degrees[-1, ] 
+
+# Change column names
+degrees <- wsj_degrees %>% tibble() %>% 
+  rename("College.Major" = "Undergraduate Major", "Starting.Median.Salary" = "Starting Median Salary", 
+         "Mid.Career.Median.Salary" = "Mid-Career Median Salary",
+          "Career.Percent.Growth" = "Percent change from Starting to Mid-Career Salary", 
+         "Percentile.10" = "Mid-Career 10th Percentile Salary", 
+         "Percentile.25" = "Mid-Career 25th Percentile Salary", 
+         "Percentile.75" = "Mid-Career 75th Percentile Salary", 
+         "Percentile.90" = "Mid-Career 90th Percentile Salary")
+
+# Read in the dataset (from dataCamp)
+#degrees <- read_csv("datasets/degrees-that-pay-back.csv", 
+                    #col_names = c("College.Major", "Starting.Median.Salary", "Mid.Career.Median.Salary",
+                                  #"Career.Percent.Growth", "Percentile.10", "Percentile.25", "Percentile.75", "Percentile.90"), skip = 1)
+
+# Display the first few rows and a summary of the tibble
+kable(head(degrees, 10), 
+      #caption = "Sample of the ''Salary Increase By Major'' table"
+      ) %>%
+          kable_styling(full_width = FALSE, position = "left", bootstrap_options = "striped", font_size = 10)
+
+```
+
+<br>
+**Summary statistics of the "Salary Increase By Major" table**
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+
+# Notice that our salary data is in currency format, which R considers a string. Let's strip those special characters using the gsub function # and convert all of our columns except College.Major to numeric.
+
+# Convert the Career.Percent.Growth column to a decimal value
+degrees_clean <- degrees %>% 
+    mutate_at(vars(Starting.Median.Salary, Mid.Career.Median.Salary, Career.Percent.Growth,
+                   Percentile.10, Percentile.25, Percentile.75, Percentile.90), 
+              function(x) as.numeric(gsub("[\\$,]","", x))) %>% 
+        mutate(Career.Percent.Growth = Career.Percent.Growth/100)
+
+kable(summary(degrees_clean)) %>%
+  kable_styling(full_width = FALSE, position = "left", bootstrap_options = "striped", font_size = 10)
+
+```
+
+
+## 2. Clustering analysis 
+Let's begin our clustering analysis by determining how many clusters we should be modeling. The best number of clusters for an unlabeled dataset is not always a clear-cut answer, but fortunately there are several techniques to help us optimize. We'll work with three different methods to compare recommendations:
+
+* Elbow Method
+* Silhouette Method
+* Gap Statistic Method
+
+### 2.1 The elbow method - scree plot
+First up will be the Elbow Method. This method plots the percent variance against the number of clusters. The "elbow" bend of the curve indicates the optimal point at which adding more clusters will no longer explain a significant amount of the variance. To begin, let's select and scale the following features to base our clusters on: *Starting.Median.Salary*, *Mid.Career.Median.Salary*, *Perc.10*, and *Perc.90*. Then we'll use the fancy `fviz_nbclust()` function from the `factoextra package` and `kmenas()` from the `stats package` to determine and visualize the optimal number of clusters.
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+
+# Select and scale the relevant features and store as k_means_data
+k_means_data <- degrees_clean %>%
+                select(Starting.Median.Salary, Mid.Career.Median.Salary, 
+                       Percentile.10, Percentile.90) %>%
+                scale() #default method centers and/or scales the columns of a numeric matrix
+
+# Run the fviz_nbclust function with our selected data and method "wss" = total within sum of square
+# fviz_nbclus is a partitioning method, such as k-means clustering require the users to specify the number of clusters to be generated.
+#https://www.datanovia.com/en/lessons/determining-the-optimal-number-of-clusters-3-must-know-methods/
+
+elbow_method_factorextra <- fviz_nbclust(k_means_data, FUNcluster = kmeans, method = "wss")
+
+# View the plot
+#plot(elbow_method_factorextra)
+
+
+# using kmenas() and map_dbl() from purr
+tot_withinss <- purrr::map_dbl(1:10, function(k){
+                model <- kmeans(x = k_means_data, centers = k)
+                model$tot.withinss
+              })
+
+# data.framte to plot
+elbow_method_kmenas <- data.frame(k = 1:10,
+                                  tot_withinss = tot_withinss) %>% 
+                           mutate(k = factor(k), method = "kmeans()")
+
+#combime data from both methods
+elbow_two_methods <- elbow_method_factorextra[[1]] %>% 
+                                  rename("k" = "clusters", "tot_withinss" = "y") %>% 
+                      mutate(method = "fviz_nbclust()") %>% 
+                      bind_rows(elbow_method_kmenas)
+
+ggplot(elbow_two_methods, aes(k, tot_withinss, group = method, color = method)) + 
+  geom_line(size = 1.2) + geom_point(size = 6, alpha = 0.6) + theme_classic() + scale_x_discrete(breaks = seq(1, 10)) +
+  scale_color_manual(values = c("#3279CA", "#e84263")) + 
+  xlab("Number of clusters k") + ylab("Total within sum of square") + ggtitle("Optimal number of clusters")
+
+```
+
+
+### 2.2 The silhouette method
+Instead of needing to "manually" apply the elbow method by running multiple k_means models and plotting the calculated the total within cluster sum of squares for each potential value of k, fviz_nbclust handled all of this for us behind the scenes. Can we use it for the Silhouette Method as well? The Silhouette Method will evaluate the quality of clusters by how well each point fits within a cluster, maximizing average "silhouette" width.
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+
+# Run the fviz_nbclust function with the method "silhouette" 
+silhouette_method <- fviz_nbclust(k_means_data, FUNcluster = kmeans, method = "silhouette")
+
+# View the plot
+#plot(silhouette_method)
+
+# Calculating S(i) using pam() function
+sil_width_pam <- purrr::map_dbl(2:10, function(k){
+                  model <- pam(x = k_means_data, k = k)
+                  model$silinfo$avg.width
+                  })
+sil_width_pam_df <- data.frame(k = 1:10,
+                               sil_width = c(0, sil_width_pam)) %>% 
+                          mutate(k = factor(k), method = "pam()")
+
+sil_two_methods <- silhouette_method[[1]] %>% 
+                                  rename("k" = "clusters", "sil_width" = "y") %>% 
+                      mutate(method = "fviz_nbclust()") %>% 
+                      bind_rows(sil_width_pam_df)
+
+
+ggplot(sil_two_methods, aes(k, sil_width, group = method, color = method)) + 
+  geom_line(size = 1.2) + geom_point(size = 6, alpha = 0.6) + theme_classic() + scale_x_discrete(breaks = seq(1, 10)) + 
+  scale_color_manual(values = c("#3279CA", "#e84263")) + 
+  xlab("Number of clusters k") + ylab("Average silhouette width") + ggtitle("Optimal number of clusters - Silhouette Method")
+
+```
+
+### 2.3 The gap statistic method
+It seems that our two methods so far disagree on the optimal number of clusters.
+
+For our final method, let's see what the Gap Statistic Method has to say about this. The Gap Statistic Method will compare the total variation within clusters for different values of k to the null hypothesis, maximizing the "gap." The "null hypothesis" refers to a uniformly distributed simulated reference dataset with no observable clusters, generated by aligning with the principle components of our original dataset. In other words, how much more variance is explained by k clusters in our dataset than in a fake dataset where all majors have equal salary potential?
+
+Fortunately, we have the clusGap function to calculate this behind the scenes and the fviz_gap_stat function to visualize the results.
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+
+# Use the clusGap function to apply the Gap Statistic Method
+gap_stat <- clusGap(k_means_data, FUN = kmeans, nstart = 25, K.max = 10, B = 50)
+
+# Use the fviz_gap_stat function to vizualize the results
+gap_stat_method <- fviz_gap_stat(gap_stat)
+
+# View the plot
+gap_stat_method
+
+```
+
+
+## 4. K-means algorithm
+Looks like the Gap Statistic Method agreed with the Elbow Method! According to majority rule, let's use 3 for our optimal number of clusters. With this information, we can now run our k-means algorithm on the selected data. We will then add the resulting cluster information to label our original dataframe.
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+# Set a random seed
+set.seed(111)
+
+# Set k equal to the optimal number of clusters
+num_clusters <- 3
+
+# Run the k-means algorithm 
+k_means <- kmeans(k_means_data, centers = num_clusters, iter.max = 15, nstart = 25)
+
+# Label the clusters of degrees_clean
+degrees_labeled <- degrees_clean %>%
+    mutate(clusters = k_means$cluster)
+
+```
+
+## 5. Visualizing the clusters
+Now for the pretty part: visualizing our results. First let's take a look at how each cluster compares in Starting vs. Mid Career Median Salaries. What do the clusters say about the relationship between Starting and Mid Career salaries?
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+
+# Graph the clusters by Starting and Mid Career Median Salaries
+career_growth <- ggplot(degrees_labeled, aes(x = Starting.Median.Salary, 
+                                             y = Mid.Career.Median.Salary,
+                                            color = factor(clusters))) +
+                    geom_point(alpha = 4/5, size = 7) +
+                    scale_x_continuous(labels = scales::dollar) +
+                    scale_y_continuous(labels = scales::dollar) +
+                    scale_color_manual(values = c("#EC2C73", "#29AEC7", "#FFDD30"), name = "clusters") + 
+                    xlab("Starting Median Salary") + ylab("Mid Career Median Salary") +
+                    theme_classic()
+
+
+# View the plot
+career_growth
+
+```
+
+## 8. A deeper dive into the clusters
+Unsurprisingly, most of the data points are hovering in the top left corner, with a relatively linear relationship. In other words, the higher your starting salary, the higher your mid career salary. The three clusters provide a level of delineation that intuitively supports this.
+
+How might the clusters reflect potential mid career growth? There are also a couple curious outliers from clusters 1 and 3... perhaps this can be explained by investigating the mid career percentiles further, and exploring which majors fall in each cluster.
+
+Right now, we have a column for each percentile salary value. In order to visualize the clusters and majors by mid career percentiles, we'll need to reshape the degrees_labeled data using tidyr's gather function to make a percentile key column and a salary value column to use for the axes of our following graphs. We'll then be able to examine the contents of each cluster to see what stories they might be telling us about the majors.
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+
+```
+
+## 9. The liberal arts cluster
+Let's graph Cluster 1 and examine the results. These Liberal Arts majors may represent the lowest percentiles with limited growth opportunity, but there is hope for those who make it! Music is our riskiest major with the lowest 10th percentile salary, but Drama wins the highest growth potential in the 90th percentile for this cluster (so don't let go of those Hollywood dreams!). Nursing is the outlier culprit of cluster number 1, with a higher safety net in the lowest percentile to the median. Otherwise, this cluster does represent the majors with limited growth opportunity.
+
+An aside: It's worth noting that most of these majors leading to lower-paying jobs are women-dominated, according to this Glassdoor study. According to the research:
+
+"The single biggest cause of the gender pay gap is occupation and industry sorting of men and women into jobs that pay differently throughout the economy. In the U.S., occupation and industry sorting explains 54 percent of the overall pay gap—by far the largest factor."
+
+Does this imply that women are statistically choosing majors with lower pay potential, or do certain jobs pay less because women choose them...?
+
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+
+```
+
+
+## 10. The goldilocks cluster
+On to Cluster 2, right in the middle! Accountants are known for having stable job security, but once you're in the big leagues you may be surprised to find that Marketing or Philosophy can ultimately result in higher salaries. The majors of this cluster are fairly middle of the road in our dataset, starting off not too low and not too high in the lowest percentile. However, this cluster also represents the majors with the greatest differential between the lowest and highest percentiles.
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+
+```
+
+## 11. The over achiever cluster
+Finally, let's visualize Cluster 3. If you want financial security, these are the majors to choose from. Besides our one previously observed outlier now identifiable as Physician Assistant lagging in the highest percentiles, these heavy hitters and solid engineers represent the highest growth potential in the 90th percentile, as well as the best security in the 10th percentile rankings. Maybe those Freakonomics guys are on to something...
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+
+```
+
+## 12. Every major's wonderful
+Thus concludes our journey exploring salary projections by college major via a k-means clustering analysis! Dealing with unsupervized data always requires a bit of creativity, such as our usage of three popular methods to determine the optimal number of clusters. We also used visualizations to interpret the patterns revealed by our three clusters and tell a story.
+
+Which two careers tied for the highest career percent growth? While it's tempting to focus on starting career salaries when choosing a major, it's important to also consider the growth potential down the road. Keep in mind that whether a major falls into the Liberal Arts, Goldilocks, or Over Achievers cluster, one's financial destiny will certainly be influenced by numerous other factors including the school attended, location, passion or talent for the subject, and of course the actual career(s) pursued.
+
+A similar analysis to evaluate these factors may be conducted on the additional data provided by the Wall Street Journal article, comparing salary potential by type and region of college attended. But in the meantime, here's some inspiration from xkcd for any students out there still struggling to choose a major.
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
