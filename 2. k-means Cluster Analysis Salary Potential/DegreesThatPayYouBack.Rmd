@@ -1,7 +1,8 @@
 ---
 title: "Degrees That Pay You Back"
-author: "Magdalena Blum-Oeste"
-date: "`r Sys.Date()`"
+subtitle: "Clustering unsupervised data with k-means"
+author: "Dr. Magdalena Blum-Oeste"
+date: "2020-05-05"
 output:
   prettydoc::html_pretty:
     theme: architect
@@ -13,19 +14,20 @@ Wondering if that Philosophy major will really help you pay the bills? Think you
 
 In this notebook, we'll be using data collected from a year-long survey of 1.2 million people with only a bachelor's degree by PayScale Inc., made available [here](http://online.wsj.com/public/resources/documents/info-Degrees_that_Pay_you_Back-sort.html?mod=article_inline) by the Wall Street Journal for their article [Ivy League's Big Edge: Starting Pay](https://www.wsj.com/articles/SB121746658635199271). After doing some data clean up, we'll compare the recommendations from three different methods for determining the optimal number of clusters, apply a k-means clustering analysis, and visualize the results.
 
-To begin, let's prepare by loading the following packages: tidyverse, dplyr, readr, ggplot2, cluster, and factoextra. We'll then import the data from degrees-that-pay-back.csv (which is stored in a folder called datasets), and take a quick look at what we're working with.
+To begin, let's prepare by loading the following packages: tidyr, dplyr, readr, ggplot2, cluster, factoextra, XML, rvest, janitor and kableExtra. We'll then import the data from degrees-that-pay-back.csv (which is stored in a folder called datasets), and take a quick look at what we're working with.
 
 ```{r setup, include = FALSE}
 # Load relevant packages
 library(pacman)
 p_load(tidyr, dplyr, readr, ggplot2, cluster, factoextra, XML, rvest, janitor, kableExtra)
+
 ```
 
 <br>
 **Sample of the "Salary Increase By Major" table**
 ```{r echo = FALSE, warning = FALSE, message = FALSE}
-# Scraping data from wsj webpage
 
+# Scraping data from wsj webpage
 url <-  "http://online.wsj.com/public/resources/documents/info-Degrees_that_Pay_you_Back-sort.html?mod=article_inline"
 for_table <- read_html(url)
 wsj_table <- for_table %>% 
@@ -124,9 +126,10 @@ elbow_two_methods <- elbow_method_factorextra[[1]] %>%
                       mutate(method = "fviz_nbclust()") %>% 
                       bind_rows(elbow_method_kmenas)
 
+# View the plot
 ggplot(elbow_two_methods, aes(k, tot_withinss, group = method, color = method)) + 
   geom_line(size = 1.2) + geom_point(size = 6, alpha = 0.6) + theme_classic() + scale_x_discrete(breaks = seq(1, 10)) +
-  scale_color_manual(values = c("#3279CA", "#e84263")) + 
+  scale_color_manual(values = c("#AE017E", "#02818A")) + 
   xlab("Number of clusters k") + ylab("Total within sum of square") + ggtitle("Optimal number of clusters")
 
 ```
@@ -143,6 +146,7 @@ silhouette_method <- fviz_nbclust(k_means_data, FUNcluster = kmeans, method = "s
 # View the plot
 #plot(silhouette_method)
 
+# The same plot as silhouette_method but ggplot used
 # Calculating S(i) using pam() function
 sil_width_pam <- purrr::map_dbl(2:10, function(k){
                   model <- pam(x = k_means_data, k = k)
@@ -160,10 +164,35 @@ sil_two_methods <- silhouette_method[[1]] %>%
 
 ggplot(sil_two_methods, aes(k, sil_width, group = method, color = method)) + 
   geom_line(size = 1.2) + geom_point(size = 6, alpha = 0.6) + theme_classic() + scale_x_discrete(breaks = seq(1, 10)) + 
-  scale_color_manual(values = c("#3279CA", "#e84263")) + 
+  scale_color_manual(values = c("#AE017E", "#02818A")) + 
   xlab("Number of clusters k") + ylab("Average silhouette width") + ggtitle("Optimal number of clusters - Silhouette Method")
+```
+
+It is possible to plot silhouette coefficients of observations using `silhouette()` function from the `cluster package` at selected cluster number. This plot includes short summary of the silhouette analysis.
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+#Clusters silhouette plot with pam() and silhouette() from cluster package
+sil_width_to <- pam(k_means_data, k = 2)
+sil_width_toplot <- silhouette(sil_width_to)
+plot(sil_width_toplot)
 
 ```
+
+In R, we can also use the `eclust()` from `factoextra package` to produce enhanced k-means clustering. Using eclust has several advantages over standard packages used to cluster analysis. The function computes the gap statistic for estimating the optimal number of clusters. It provides information for silhouette and other clustering methods (e.g. dendrogram clustering) and has visualisation via ggplot2, performed directly in the `eclust()` or via `fviz_cluster()` with e.g. an option of `ggtheme` to set a ggplot2 theme.
+
+In our example the `eclust()` automatically finds 3 clusters being the optimal choice of k. The function performs principal component analysis to allow us to visualise and summarise the data with many variables by reducing them into two variables. These are Dim1 and Dim2. These are essentially linear combinations of the original data. 
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+
+# Visual Enhancement of Clustering Analysis
+enhanced_kmean <- eclust(k_means_data, "kmeans", graph = FALSE) 
+
+#Visualize silhouette
+fviz_silhouette(enhanced_kmean, palette = c("#02818A", "#AE017E", "#225EA8"),
+             ggtheme = theme_classic())
+
+```
+
 
 ### 2.3 The gap statistic method
 It seems that our two methods so far disagree on the optimal number of clusters.
@@ -189,6 +218,7 @@ gap_stat_method
 ## 4. K-means algorithm
 Looks like the Gap Statistic Method agreed with the Elbow Method! According to majority rule, let's use 3 for our optimal number of clusters. With this information, we can now run our k-means algorithm on the selected data. We will then add the resulting cluster information to label our original dataframe.
 
+
 ```{r echo = FALSE, warning = FALSE, message = FALSE}
 # Set a random seed
 set.seed(111)
@@ -201,7 +231,17 @@ k_means <- kmeans(k_means_data, centers = num_clusters, iter.max = 15, nstart = 
 
 # Label the clusters of degrees_clean
 degrees_labeled <- degrees_clean %>%
-    mutate(clusters = k_means$cluster)
+  mutate(clusters = k_means$cluster)
+    #mutate(clusters = factor(k_means$cluster, 
+                            # levels = c(1, 2, 3),
+                            # labels = c("c1", "c2", "c3")))
+
+
+# Visual Enhancement of Clustering Analysis
+enhanced_kmean <- eclust(k_means_data, "kmeans", graph = FALSE) 
+
+#Visualize k-mean clusters
+fviz_cluster(enhanced_kmean, geom = "point", ellipse.type = "convex", palette = c("#02818A", "#AE017E", "#225EA8"),                     labels = T, ggtheme = theme_classic())
 
 ```
 
@@ -211,13 +251,12 @@ Now for the pretty part: visualizing our results. First let's take a look at how
 ```{r echo = FALSE, warning = FALSE, message = FALSE}
 
 # Graph the clusters by Starting and Mid Career Median Salaries
-career_growth <- ggplot(degrees_labeled, aes(x = Starting.Median.Salary, 
-                                             y = Mid.Career.Median.Salary,
+career_growth <- ggplot(degrees_labeled, aes(x = Starting.Median.Salary, y = Mid.Career.Median.Salary,
                                             color = factor(clusters))) +
-                    geom_point(alpha = 4/5, size = 7) +
+                    geom_point(alpha = 4/5, size = 5) +
                     scale_x_continuous(labels = scales::dollar) +
                     scale_y_continuous(labels = scales::dollar) +
-                    scale_color_manual(values = c("#EC2C73", "#29AEC7", "#FFDD30"), name = "clusters") + 
+                    scale_color_manual(values = c("#02818A", "#AE017E", "#225EA8"), name = "clusters") + 
                     xlab("Starting Median Salary") + ylab("Mid Career Median Salary") +
                     theme_classic()
 
@@ -227,14 +266,43 @@ career_growth
 
 ```
 
-## 8. A deeper dive into the clusters
-Unsurprisingly, most of the data points are hovering in the top left corner, with a relatively linear relationship. In other words, the higher your starting salary, the higher your mid career salary. The three clusters provide a level of delineation that intuitively supports this.
 
-How might the clusters reflect potential mid career growth? There are also a couple curious outliers from clusters 1 and 3... perhaps this can be explained by investigating the mid career percentiles further, and exploring which majors fall in each cluster.
-
-Right now, we have a column for each percentile salary value. In order to visualize the clusters and majors by mid career percentiles, we'll need to reshape the degrees_labeled data using tidyr's gather function to make a percentile key column and a salary value column to use for the axes of our following graphs. We'll then be able to examine the contents of each cluster to see what stories they might be telling us about the majors.
 
 ```{r echo = FALSE, warning = FALSE, message = FALSE}
+
+# # Visual Enhancement of Clustering Analysis
+# enhanced_kmean <- eclust(k_means_data, "kmeans", graph = FALSE) 
+# 
+# #Visualize k-mean clusters
+# fviz_cluster(enhanced_kmean, geom = "point", ellipse.type = "convex", palette = c("#02818A", "#AE017E", "#225EA8"),                     labels = T, ggtheme = theme_classic())
+
+```
+
+
+
+## 8. A deeper dive into the clusters
+Unsurprisingly, most of the data points are hovering in the bottom left corner, with a relatively linear relationship. In other words, the higher your starting salary, the higher your mid career salary. The three clusters provide a level of delineation that intuitively supports this.
+
+How might the clusters reflect potential mid career growth? There are also a couple curious outliers from clusters 1 and 3. Perhaps this can be explained by investigating the mid career percentiles further, and exploring which majors fall in each cluster.
+
+Right now, we have a column for each percentile salary value. In order to visualize the clusters and majors by mid career percentiles, we will need to reshape the `degrees_labeled` data using tidyr's `gather()` function to make a `percentile` key column and a `salary` value column to use for the axes of our following graphs. We will then be able to examine the contents of each cluster to see what stories they might be telling us about the majors.
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+
+# Use the gather function to reshape degrees and 
+# use mutate() to reorder the new percentile column
+degrees_perc <- degrees_labeled %>%
+            select(College.Major, Percentile.10, Percentile.25, 
+                   Mid.Career.Median.Salary, Percentile.75, Percentile.90, clusters) %>%
+            gather(key = "percentile", value = "salary", 
+                   -c(College.Major, clusters)) %>%
+            mutate(percentile = factor(percentile, 
+                                       levels = c("Percentile.10", "Percentile.25",
+                                                "Mid.Career.Median.Salary",
+                                                "Percentile.75","Percentile.90")))
+kable(head(degrees_perc, 10), 
+      caption = "Sample of the gatered table for percentile visualization in ggplot") %>%
+      kable_styling(full_width = FALSE, position = "left", bootstrap_options = "striped", font_size = 10)
 
 ```
 
@@ -248,9 +316,33 @@ An aside: It's worth noting that most of these majors leading to lower-paying jo
 Does this imply that women are statistically choosing majors with lower pay potential, or do certain jobs pay less because women choose them...?
 
 
+
 ```{r echo = FALSE, warning = FALSE, message = FALSE}
 
+# Get colors from Brewer palette
+# colourCount = 16 #length(unique(mtcars$hp))
+# getPalette = colorRampPalette(brewer.pal(9, "Set1"))
+# plot_colors <- rev(getPalette(colourCount))
+
+# Graph the majors of Cluster 1 by percentile
+cluster_1 <- degrees_perc %>%
+                filter(clusters == 1) %>%
+                ggplot(aes(percentile, salary, group = College.Major, color = College.Major)) +
+                geom_point() + geom_line() +
+                scale_x_discrete(labels = c("10", "25", "Median", "75", "90")) +
+                scale_y_continuous(labels = scales::dollar) +
+                #scale_color_manual(values = plot_colors) +
+                theme_classic() +
+                theme(axis.text.x = element_text(size = 10),
+                      axis.title = element_blank()) +
+                  xlab("Percentile") +
+                  ggtitle("Cluster 1: Salary of the Liberal Arts")
+
+# View the plot
+cluster_1
+
 ```
+
 
 
 ## 10. The goldilocks cluster
@@ -258,14 +350,51 @@ On to Cluster 2, right in the middle! Accountants are known for having stable jo
 
 ```{r echo = FALSE, warning = FALSE, message = FALSE}
 
+# Graph the majors of Cluster 2 by percentile
+cluster_2 <- degrees_perc %>%
+                filter(clusters == 2) %>%
+                ggplot(aes(percentile, salary, group = College.Major, color = College.Major)) +
+                geom_point() + geom_line() +
+                scale_x_discrete(labels = c("10", "25", "Median", "75", "90")) +
+                #scale_color_manual(values = plot_colors) +
+                theme_classic() +
+                theme(axis.text.x = element_text(size = 10),
+                      axis.title = element_blank()) +
+                  xlab("Percentile") +
+                  ggtitle("Cluster 2: Salary of the Goldilocks")
+
+# View the plot
+cluster_2
+
 ```
+
+
 
 ## 11. The over achiever cluster
 Finally, let's visualize Cluster 3. If you want financial security, these are the majors to choose from. Besides our one previously observed outlier now identifiable as Physician Assistant lagging in the highest percentiles, these heavy hitters and solid engineers represent the highest growth potential in the 90th percentile, as well as the best security in the 10th percentile rankings. Maybe those Freakonomics guys are on to something...
 
 ```{r echo = FALSE, warning = FALSE, message = FALSE}
 
+# Graph the majors of Cluster 3 by percentile
+cluster_3 <- degrees_perc %>%
+                filter(clusters == 3) %>%
+                ggplot(aes(percentile, salary, group = College.Major, color = College.Major)) +
+                geom_point() + geom_line() +
+                scale_x_discrete(labels = c("10", "25", "Median", "75", "90")) +
+                scale_y_continuous(labels = scales::dollar) +
+                #scale_color_manual(values = plot_colors) +
+                theme_classic() +
+                theme(axis.text.x = element_text(size = 10),
+                      axis.title.y = element_blank()) +
+                  xlab("Percentile") +
+                  ggtitle("Cluster 3: Salary of the Over Achievers")
+
+# View the plot
+cluster_3
+
 ```
+
+
 
 ## 12. Every major's wonderful
 Thus concludes our journey exploring salary projections by college major via a k-means clustering analysis! Dealing with unsupervized data always requires a bit of creativity, such as our usage of three popular methods to determine the optimal number of clusters. We also used visualizations to interpret the patterns revealed by our three clusters and tell a story.
@@ -275,6 +404,19 @@ Which two careers tied for the highest career percent growth? While it's temptin
 A similar analysis to evaluate these factors may be conducted on the additional data provided by the Wall Street Journal article, comparing salary potential by type and region of college attended. But in the meantime, here's some inspiration from xkcd for any students out there still struggling to choose a major.
 
 ```{r echo = FALSE, warning = FALSE, message = FALSE}
+
+# Sort degrees by Career.Percent.Growth
+degrees_labeled_perc <- degrees_labeled %>%
+  arrange(desc(Career.Percent.Growth)) %>% 
+  mutate(Career.Percent.Growth = paste(round(Career.Percent.Growth*100, 1), "%")) %>% 
+  select(-c(Percentile.10, Percentile.25, Percentile.75, 	Percentile.90))
+
+kable(degrees_labeled_perc, caption = "Mid career growth potential in % od the salar increase") %>%
+          kable_styling(full_width = FALSE, position = "left", bootstrap_options = "striped", font_size = 10)
+
+
+# Identify the two majors tied for highest career growth potential
+#highest_career_growth <- c('....', '....')
 
 ```
 
