@@ -85,9 +85,106 @@ datatable(bb_count, caption = "Amount and share of recorded chords in MsGill Bil
 
 ## 3. Visualizing the most common chords
 <p>Of course, it's easier to get a feel for just how common some of these chords are if we graph them and show the percentage of the total chord count represented by each chord.
-Musicians may notice right away that the most common chords in this corpus are chords that are easy to play on both the guitar and the piano: C, G, A, and D major Ã¢â‚¬â€? and to an extent, F and E major. (They also belong to keys, or scales, that are easy to play on most instruments, so they fit well with melodies and solos, as well.) After that, there is a steep drop off in the frequency with which individual chords appear. </p>
-<p>To illustrate this, here is a short video demonstrating the relative ease (and difficulty) of some of the most common (and not-so-common) chords in the McGill Billboard dataset.
+Musicians may notice right away that the most common chords in this corpus are chords that are easy to play on both the guitar and the piano: C, G, A, and D major and to an extent, F and E major. (They also belong to keys, or scales, that are easy to play on most instruments, so they fit well with melodies and solos, as well.) After that, there is a steep drop off in the frequency with which individual chords appear. </p>
+<p>To illustrate the most common chords, I decided to plot the percentage of the total chords in the McGill Billboard dataset in a first level of the circle of fifths, because the top 10 chords are the first ten chords. 
 <br><br>
+
+```{r echo = FALSE, warning = FALSE, message = FALSE, fig.align = "center", fig.width = 6.8, fig.asp = 1.14}
+
+###POLAR CHART
+ 
+# Creating a bar plot from bb_count
+# chords_fct <- bb_count %>% select(chord) %>% 
+#   factor(chord, levels = c("C maj", "G maj", "D maj", "A maj", "E maj", "B maj", "F# maj", "C# maj", 
+#                            "Cb maj", "Gb maj", "Db maj", "Ab maj", "Eb maj", "Bb maj", "F maj"))
+
+bb_count_ <- bb %>% 
+count(chord) %>% 
+arrange(desc(n)) %>%
+   mutate(share = round(n/sum(n)*100, 2),
+         chord = reorder(chord, share)) %>%
+   mutate(share = n/sum(n),
+         chord = reorder(chord, share)) %>%
+   filter(chord %in% c("C:maj", "G:maj", "D:maj", "A:maj", "E:maj", 
+                       "B:maj",
+                       "F#:maj","Gb:maj",                       "Db:maj", 
+                       "Ab:maj", "Eb:maj", "Bb:maj", "F:maj"))
+  
+ bb_count_$chord <- gsub(":maj", " major", bb_count_$chord) # change maj to major
+
+ bb_count_FsGf <- bb_count_ %>%
+   filter(chord %in% c("F# major","Gb major")) %>%
+   summarize(n = sum(n), share = sum(share)) %>%
+   mutate(chord = "F#/Gb major")
+
+ bb_count_circle <- rbind(bb_count_, bb_count_FsGf) %>%
+   filter(!chord %in% c("F# major", "Gb major"))
+
+ bb_count_labels <- bb_count_circle %>%
+   mutate(label = paste0(chord,"\n", paste(round(share*100, digits = 1), "%", sep = "")))
+
+ bb_count_labels$chord <- factor(bb_count_labels$chord,
+                                 levels = c("F major","Bb major", "Eb major", "Ab major", "Db major",
+                                            "F#/Gb major", "B major", "E major", "A major", "D major", "G major", "C major"))
+
+
+  common.chords <- ggplot(bb_count_labels, aes(x = fct_reorder(label, desc(chord)), y = share, 
+                                               fill =   share)) +
+                  geom_col(position = position_stack()) +
+                  coord_polar(start = -pi/12) +
+                  scale_y_continuous(expand = c(0, 0, -0.03, 0)) +
+                  scale_fill_gradient(low = "#CC0044", high = "#CC0044") + # #DC143C crimson
+                  theme_minimal() +
+                  theme(legend.position = "none",
+                        axis.title = element_blank(),
+                        axis.text.y = element_blank(),
+                        axis.text.x = element_text(family = "Source Sans Pro", 
+                                                   size = 12, color = "white",
+                                                   face = "bold",
+                                                   margin = margin(0, 0, -5, 0, "mm")),
+                        axis.ticks.x = element_blank(),#element_line(size = 0.5, color = "grey"),
+                        axis.ticks.y = element_blank(),
+                        axis.ticks.length = unit(1, "mm"),
+                        panel.grid.major.y = element_blank(),
+                        panel.grid.major.x = element_line(color = "#808080", 
+                                                          linetype = "dotted"),
+                        panel.grid.minor.y = element_blank(),
+                        panel.grid.minor.x = element_blank(),
+                        panel.background = element_rect(fill = "black"),
+                        plot.margin = unit(c(4, 5, 1, 5), "mm"),
+                        plot.background = element_rect(fill = "black"),
+                        plot.title = element_text(family = "Source Sans Pro", 
+                                                  size = 16, color = "white", 
+                                                  face = "bold", 
+                                                  hjust = 0.5,
+                                                  #margin = margin(b = 10, r = 20, l = 20, unit = "pt")
+                                                  ),
+                        plot.subtitle = element_text(family = "Source Sans Pro", 
+                                                     size = 18, 
+                                                     color = "white", 
+                                                     face = "bold", 
+                                                     hjust = 0,
+                                                     margin = margin(b = 10, unit = "pt")),
+                        plot.caption = element_text(family = "Source Sans Pro", 
+                                                    size = 12, 
+                                                    color = "white",  
+                                                    hjust = 1,
+                                                    margin = margin(t = 20, unit = "pt"))) +
+                  labs(title = "Percentage of the total chord count from the top 100 
+                       Billboard songs \nbetween 1958 and 1991 in the circle of fifths",
+                       #subtitle = "in the outermost circle of fifths",
+                       caption = "Topic: Kris Shaffer, DataCamp project | 
+                       Data: McGill Billboard Dataset | ggplot2 chart: M. Blum-Oeste") #+
+                    # geom_text(aes(label = ifelse(share > 0.0008, paste(round(share*100, digits = 1),
+                    #"%", sep = ""), paste(""))),
+                   #position = position_stack(vjust = 1), color = "white", size = 5)
+  # View plot
+  common.chords
+
+
+```
+
+
 
 ## 4. Chord "bigrams"
 <p>Just as some chords are more common and more idiomatic than others, not all chord <em>progressions</em> are created equal. To look for common patterns in the structuring of chord progressions, we can use many of the same modes of analysis used in text-mining to analyze phrases. A chord change is simply a <em>bigram</em> Ã¢â‚¬â€? a two-"word" phrase Ã¢â‚¬â€? composed of a starting chord and a following chord. Here are the most common two-chord "phrases" in the McGill Billboard dataset.
