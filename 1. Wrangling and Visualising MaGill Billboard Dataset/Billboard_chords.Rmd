@@ -185,14 +185,86 @@ arrange(desc(n)) %>%
 ```
 
 
+<br><br>
 
 ## 4. Chord "bigrams"
-<p>Just as some chords are more common and more idiomatic than others, not all chord <em>progressions</em> are created equal. To look for common patterns in the structuring of chord progressions, we can use many of the same modes of analysis used in text-mining to analyze phrases. A chord change is simply a <em>bigram</em> Ã¢â‚¬â€? a two-"word" phrase Ã¢â‚¬â€? composed of a starting chord and a following chord. Here are the most common two-chord "phrases" in the McGill Billboard dataset.
-To help you get your ear around some of these common progressions, here's a short audio clip containing some of the most common chord bigrams.
-<br><br></p>
+<p>Just as some chords are more common and more idiomatic than others, not all chord <em>progressions</em> are created equal. To look for common patterns in the structuring of chord progressions, we can use many of the same modes of analysis used in text-mining to analyze phrases. A chord change is simply a *bigram* -  a two-"word" phrase - composed of a starting chord and a following chord. Here are the top 12 of the most common two-chord "phrases" in the McGill Billboard dataset.
+
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+
+# Wrangling and counting bigrams
+bb_bigram_count <- bb %>%
+       mutate(next_chord = lead(chord),
+          next_title = lead(title),
+           bigram = paste(chord, next_chord)) %>%
+    filter(!title != next_title) %>%
+    count(bigram) %>%
+    arrange(desc(n)) 
+
+# Displaying the first 20 rows of bb_bigram_count
+kable(head(rename(bb_bigram_count, 'Chord Progressions' = bigram, 'Amount in the Billboard dataset' = n ), 12),
+      align = "cc",
+      #caption = "Top 12 of the two-chord phrases in the McGill Billboard dataset"
+      ) %>%
+          kable_styling(full_width = FALSE, position = "center", bootstrap_options = "striped", font_size = 14)
+
+```
+
+
 
 ## 5. Visualizing the most common chord progressions
-<p>We can get a better sense of just how popular some of these chord progressions are if we plot them on a bar graph. Note how the most common chord change, G major to D major, occurs more than twice as often than even some of the other top 20 chord bigrams.</p>
+<p>We can get a better sense of just how popular some of these chord progressions are if we plot them as a percentage of the top 20 most common chord progressions on a bar graph. Note how the most common chord change, G major to D major, occurs more than twice as often than even some of the other top 20 chord bigrams.</p>
+
+```{r echo = FALSE, warning = FALSE, message = FALSE, fig.align = "center", fig.width = 6.8, fig.asp = 1.14}
+
+ bb_bigram_count %>%
+  slice(1:20) %>%
+  mutate(share = n/sum(n)) %>%
+  ggplot(aes(x = reorder(bigram, n), y = share, fill = n)) +
+  geom_col() +
+  coord_flip() +
+  scale_y_continuous(labels = percent_format(accuracy = 1), expand = c(0, 0), breaks = pretty_breaks(n = 9)) +
+  scale_fill_gradient(low = "#0095CC", high = "#CC0044") +
+  #xlab("Chord changes") +
+  #ylab("% from 20 songs") +
+  theme_minimal() +
+  theme(legend.position = "none",
+        axis.text.x = element_text(family = "Source Sans Pro", size = 16, color = "white", face = "bold"),
+        axis.text.y = element_blank(),
+        axis.title.x = element_blank(),#element_text(family = "Source Sans Pro", size = 16, color = "white", face = "bold"),
+        #axis.line.x = element_line(size = 1, color = "red"),
+        axis.ticks.x = element_line(size = 0.5, color = "grey"),
+        axis.ticks.y = element_blank(),
+        axis.ticks.length = unit(1, "mm"), 
+        panel.grid.major.y = element_blank(),
+        panel.grid.major.x = element_line(color = "grey", linetype = "dotted"),
+        panel.grid.minor.y = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        plot.margin = unit(c(20, 40, 10, 10), "pt"),
+        plot.background = element_rect(fill = "black", colour = NA), 
+        plot.title = element_text(family = "Source Sans Pro", size = 16, color = "white", face = "bold", hjust = 0.9,
+                                  margin = margin(b = 10, unit = "pt")),
+        plot.subtitle = element_text(family = "Source Sans Pro", size = 14, color = "white", face = "bold", hjust = 0.5,
+                                     margin = margin(b = 10, unit = "pt")),
+        plot.caption = element_text(family = "Source Sans Pro", size = 10, color = "white",
+                                    margin = margin(t = 20, unit = "pt"))) +
+  labs(title = "Percentage of the top 20 most common chord progressions",
+       subtitle = "in the McGill Billboard Dataset", 
+       caption = "Topic: Kris Shaffer, DataCamp project | 
+                       Data: McGill Billboard Dataset | ggplot2 chart: M. Blum-Oeste") +
+  geom_text(aes(label = paste0(bigram, "   ")), position = position_stack(0), hjust = 0,
+            family = "Source Sans Pro", size = 6, color = "white", face = "bold") +
+  geom_text(aes(label = paste0(round(share*100, 1), "%")), position = position_stack(1), hjust = 1,
+            family = "Source Sans Pro", size = 6, color = "white", face = "bold")
+
+
+
+```
+
+
+
+<br><br>
 
 ## 6. Finding the most common artists
 <p>As noted above, the most common chords (and chord bigrams) are those that are easy to play on both the guitar and the piano. If the degree to which these chords are idiomatic on guitar or piano (or both) <em>determine</em> how common they are, we would expect to find the more idiomatic guitar chords (C, G, D, A, and E major) to be more common in guitar-driven songs, but we would expect the more idiomatic piano chords (C, F, G, D, and B-flat major) to be more common in piano-driven songs. (Note that there is some overlap between these two instruments.)</p>
