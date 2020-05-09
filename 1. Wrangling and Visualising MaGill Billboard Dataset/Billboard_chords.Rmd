@@ -14,12 +14,12 @@ output:
 <p>We can uncover trends in the kinds of chord progressions used by popular artists by analyzing the harmonic data provided in the <a href="http://ddmal.music.mcgill.ca/research/billboard">McGill Billboard Dataset</a>. This dataset includes professionally tagged chords for several hundred pop/rock songs representative of singles that made the Billboard Hot 100 list between 1958 and 1991. Using the data-wrangling tools available in the <code>dplyr</code> package, and the visualization tools available in the <code>ggplot2</code> package, we can explore the most common chords and chord progressions in these songs, and contrast the harmonies of some guitar-led and piano-led artists to see where the "affordances" of those instruments may affect the chord choices artists make.</p>
 
 Required CRAN packages for this coding project are:
-`pacman, tidyverse, DT, forcats, kableExtra, readr, scales, stringr`
+`pacman, tidyverse, DT, forcats, kableExtra, readr, ggrepel, scales, stringr`
 
 ```{r setup, include = FALSE}
   knitr::opts_chunk$set(echo = TRUE)
   library(pacman)
-  p_load(tidyverse, DT, forcats, kableExtra, readr, scales, stringr)
+  p_load(tidyverse, DT, forcats, kableExtra, readr, scales, stringr, ggrepel)
 ```
 
 ```{r echo = FALSE, warning = FALSE, message = FALSE}
@@ -214,18 +214,22 @@ kable(head(rename(bb_bigram_count, 'Chord Progressions' = bigram, 'Amount in the
 
 
 ## 5. Visualizing the most common chord progressions
-<p>We can get a better sense of just how popular some of these chord progressions are if we plot them as a percentage of the top 20 most common chord progressions on a bar graph. Note how the most common chord change, G major to D major, occurs more than twice as often than even some of the other top 20 chord bigrams.</p>
+<p>We can get a better sense of just how popular some of these chord progressions are if we plot them as a percentage of the top 12 most common chord progressions on a bar chart. </p>
 
 ```{r echo = FALSE, warning = FALSE, message = FALSE, fig.align = "center", fig.width = 6.8, fig.asp = 1.14}
 
- bb_bigram_count %>%
-  slice(1:20) %>%
-  mutate(share = n/sum(n)) %>%
-  ggplot(aes(x = reorder(bigram, n), y = share, fill = n)) +
+bb_bigram_perc <- bb_bigram_count %>%
+                    slice(1:12) %>%
+                    mutate(share = n/sum(n)) 
+bb_bigram_perc$bigram <- gsub(":maj", "maj  ", bb_bigram_perc$bigram) 
+  
+  
+  ggplot(bb_bigram_perc, aes(x = reorder(bigram, n), y = share, fill = n)) +
   geom_col() +
   coord_flip() +
-  scale_y_continuous(labels = percent_format(accuracy = 1), expand = c(0, 0), breaks = pretty_breaks(n = 9)) +
-  scale_fill_gradient(low = "#0095CC", high = "#CC0044") +
+  scale_y_continuous(labels = percent_format(accuracy = 1), expand = c(0, 0), breaks = pretty_breaks(n = 10)) +
+  #scale_fill_gradient(low = "#0095CC", high = "#CC0044") +
+  scale_fill_gradient(low = "white", high = "white") +
   #xlab("Chord changes") +
   #ylab("% from 20 songs") +
   theme_minimal() +
@@ -243,20 +247,21 @@ kable(head(rename(bb_bigram_count, 'Chord Progressions' = bigram, 'Amount in the
         panel.grid.minor.x = element_blank(),
         plot.margin = unit(c(20, 40, 10, 10), "pt"),
         plot.background = element_rect(fill = "black", colour = NA), 
-        plot.title = element_text(family = "Source Sans Pro", size = 16, color = "white", face = "bold", hjust = 0.9,
+        plot.title = element_text(family = "Source Sans Pro", size = 16, color = "white", face = "bold", hjust = 0.6,
                                   margin = margin(b = 10, unit = "pt")),
         plot.subtitle = element_text(family = "Source Sans Pro", size = 14, color = "white", face = "bold", hjust = 0.5,
                                      margin = margin(b = 10, unit = "pt")),
         plot.caption = element_text(family = "Source Sans Pro", size = 10, color = "white",
                                     margin = margin(t = 20, unit = "pt"))) +
-  labs(title = "Percentage of the top 20 most common chord progressions",
+  labs(title = "Share of the top 12 most common chord progressions (bigrams)",
        subtitle = "in the McGill Billboard Dataset", 
        caption = "Topic: Kris Shaffer, DataCamp project | 
                        Data: McGill Billboard Dataset | ggplot2 chart: M. Blum-Oeste") +
-  geom_text(aes(label = paste0(bigram, "   ")), position = position_stack(0), hjust = 0,
-            family = "Source Sans Pro", size = 6, color = "white", face = "bold") +
-  geom_text(aes(label = paste0(round(share*100, 1), "%")), position = position_stack(1), hjust = 1,
-            family = "Source Sans Pro", size = 6, color = "white", face = "bold")
+  geom_label(aes(label = paste0(bigram, "   ", round(share*100, 1), "%")), fill = "black", 
+             position = position_stack(0), hjust = -0.01, label.padding  = unit(0.41, "lines"),
+             family = "Source Sans Pro", size = 7, color = "white", fontface = "bold") #+
+  #geom_text(aes(label = paste0(round(share*100, 1), "%")), position = position_stack(1), hjust = 1,
+   #         family = "Source Sans Pro", size = 6, color = "black", face = "bold")
 
 
 
@@ -270,6 +275,28 @@ kable(head(rename(bb_bigram_count, 'Chord Progressions' = bigram, 'Amount in the
 <p>As noted above, the most common chords (and chord bigrams) are those that are easy to play on both the guitar and the piano. If the degree to which these chords are idiomatic on guitar or piano (or both) <em>determine</em> how common they are, we would expect to find the more idiomatic guitar chords (C, G, D, A, and E major) to be more common in guitar-driven songs, but we would expect the more idiomatic piano chords (C, F, G, D, and B-flat major) to be more common in piano-driven songs. (Note that there is some overlap between these two instruments.)</p>
 <p>The McGill Billboard dataset does not come with songs tagged as "piano-driven" or "guitar-driven," so to test this hypothesis, we'll have to do that manually. Rather than make this determination for every song in the corpus, let's focus on just a few to see if the hypothesis has some validity. If so, then we can think about tagging more artists in the corpus and testing the hypothesis more exhaustively.</p>
 <p>Here are the 30 artists with the most songs in the corpus. From this list, we'll extract a few artists who are obviously heavy on guitar or piano to compare.</p>
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+
+# Finding 30 artists with the most songs in the corpus
+bb_30_artists <- bb %>%
+    select(artist, title) %>%
+    unique() %>%
+    count(artist) %>%
+  filter(n >= 4) %>%
+  arrange(desc(n))
+  
+# Displaying 30 artists with the most songs in the corpus
+kable(head(rename(bb_30_artists, 'Artist' = artist, 'Number of Songs' = n ), 34),
+      align = "cc",
+      #caption = "Top 12 of the two-chord phrases in the McGill Billboard dataset"
+      ) %>%
+          kable_styling(full_width = FALSE, position = "center", bootstrap_options = "striped", font_size = 14)
+
+```
+
+
+
 
 ## 7. Tagging the corpus
 <p>There are relatively few artists in this list whose music is demonstrably "piano-driven," but we can identify a few that generally emphasize keyboards over guitar: Abba, Billy Joel, Elton John, and Stevie Wonder Ã¢â‚¬â€? totaling 17 songs in the corpus. There are many guitar-centered artists in this list, so for our test, we'll focus on three well known, guitar-heavy artists with a similar number of songs in the corpus: The Rolling Stones, The Beatles, and Eric Clapton (18 songs).</p>
