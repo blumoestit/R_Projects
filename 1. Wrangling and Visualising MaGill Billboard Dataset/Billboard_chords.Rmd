@@ -15,12 +15,12 @@ Modified DataCamp Project *Wrangling and Visualizing Musical Data* by Kris Shaff
 <p>We can uncover trends in the kinds of chord progressions used by popular artists by analyzing the harmonic data provided in the <a href="http://ddmal.music.mcgill.ca/research/billboard">McGill Billboard Dataset</a>. This dataset includes professionally tagged chords for several hundred pop/rock songs representative of singles that made the Billboard Hot 100 list between 1958 and 1991. Using the data-wrangling tools available in the <code>dplyr</code> package, and the visualization tools available in the <code>ggplot2</code> package, we can explore the most common chords and chord progressions in these songs, and contrast the harmonies of some guitar-led and piano-led artists to see where the "affordances" of those instruments may affect the chord choices artists make.</p>
 
 Required CRAN packages for this coding project are:
-`pacman, tidyverse, DT, forcats, kableExtra, readr, ggrepel, scales, stringr`
+`pacman, tidyverse, DT, kableExtra, scales`
 
 ```{r setup, include = FALSE}
   knitr::opts_chunk$set(echo = TRUE)
   library(pacman)
-  p_load(tidyverse, DT, forcats, kableExtra, readr, scales, stringr, ggrepel)
+  p_load(tidyverse, DT, kableExtra, scales)
 ```
 
 
