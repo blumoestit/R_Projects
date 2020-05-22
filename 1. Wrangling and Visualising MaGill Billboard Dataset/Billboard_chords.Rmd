@@ -8,6 +8,7 @@ output:
     theme: tactile
     #highlight: github
 ---
+Modified DataCamp Project *Wrangling and Visualizing Musical Data* by Kris Shaffer
 
 ## 1. Introduction
 <p>How do musicians choose the chords they use in their songs? Do guitarists, pianists, and singers gravitate towards different kinds of harmony?</p>
@@ -22,14 +23,19 @@ Required CRAN packages for this coding project are:
   p_load(tidyverse, DT, forcats, kableExtra, readr, scales, stringr, ggrepel)
 ```
 
+
+### Sample of Billboard chords data table
 ```{r echo = FALSE, warning = FALSE, message = FALSE}
+
 # Reading in the McGill Billboard chord data
 bb <- read_csv('https://raw.githubusercontent.com/blumoestit/R_Projects/master/1.%20Wrangling%20and%20Visualising%20MaGill%20Billboard%20Dataset/McGillBillboardData/bb_chords.csv')
 
 # Taking a look at the first rows in bb
+kable(head(bb, 7)#, 
+      #caption = "Sample of Billboard chords data table"
+      ) %>%
+      kable_styling(full_width = FALSE, position = "left", bootstrap_options = "striped", font_size = 14)
 
-kable(head(bb, 7), caption = "Sample of Billboard chords data table") %>%
-          kable_styling(full_width = FALSE, position = "left", bootstrap_options = "striped", font_size = 14)
 ```
 
 
@@ -37,14 +43,16 @@ kable(head(bb, 7), caption = "Sample of Billboard chords data table") %>%
 
 ```{r echo = FALSE, warning = FALSE, message = FALSE}
 
+# List of artists
 artists <- bb %>%
   select(artist, title, year) %>%
   unique() %>% 
   arrange(artist) %>%
   rename("Artist" = "artist", "Song" = "title", "Year" = "year")
 
+# Table List of Artists
 font.size <- "10pt"
-datatable(as.data.frame(artists), caption = "Billboard artists and songs data table",
+datatable(as.data.frame(artists), #caption = "Billboard artists and songs data table",
           options = list(pageLength = 5,
           initComplete = htmlwidgets::JS(
             "function(settings, json) {",
@@ -53,11 +61,14 @@ datatable(as.data.frame(artists), caption = "Billboard artists and songs data ta
 
 ```
 
+<br>
 
 ## 2. The most common chords
 <p>As seen in the previous task, this is a <em>tidy</em> dataset: each row represents a single observation, and each column a particular variable or attribute of that observation. Note that the metadata for each song (title, artist, year) is repeated for each chord -- like "I Don't Mind" by James Brown, 1961 -- while the unique attributes of each chord (chord symbol, chord quality, and analytical designations like integer and Roman-numeral notation) is included once for each chord change.</p>
 <p>A key element of the style of any popular musical artist is the kind of chords they use in their songs. But not all chords are created equal! In addition to differences in how they sound, some chords are simply easier to play than others. On top of that, some chords are easier to play on one instrument than they are on another. And while master musicians can play a wide variety of chords and progressions with ease, it's not a stretch to think that even the best musicians may choose more "idiomatic" chords and progressions for their instrument.</p>
 <p>To start to explore that, let's look at the most common chords in the McGill Billboard Dataset.</p>
+
+### Amount and share of recorded chords
 
 ```{r echo = FALSE, warning = FALSE, message = FALSE}
 # Counting the most common chords
@@ -73,7 +84,7 @@ arrange(desc(n)) %>%
 #   kable_styling(full_width = FALSE, position = "left", bootstrap_options = "striped", font_size = 12)
 
 font.size <- "10pt"
-datatable(bb_count, caption = "Amount and share of recorded chords in MsGill Billboard Data",
+datatable(bb_count, #caption = "Amount and share of recorded chords in MsGill Billboard Data",
           options = list(pageLength = 5,
           initComplete = htmlwidgets::JS(
             "function(settings, json) {",
@@ -82,83 +93,78 @@ datatable(bb_count, caption = "Amount and share of recorded chords in MsGill Bil
       
 ```
  
+<br>
 
 ## 3. Visualizing the most common chords
 <p>Of course, it's easier to get a feel for just how common some of these chords are if we graph them and show the percentage of the total chord count represented by each chord.
 Musicians may notice right away that the most common chords in this corpus are chords that are easy to play on both the guitar and the piano: C, G, A, and D major and to an extent, F and E major. (They also belong to keys, or scales, that are easy to play on most instruments, so they fit well with melodies and solos, as well.) After that, there is a steep drop off in the frequency with which individual chords appear. </p>
-<p>To illustrate the most common chords, I decided to plot the percentage of the total chords in the McGill Billboard dataset in a first level of the circle of fifths, because the top 10 chords are the first ten chords. 
-<br><br>
+<p>To illustrate the most common chords, I decided to plot the percentage of the total chords in the McGill Billboard dataset in a first level of the circle of fifths because the top 10 chords of the McGill Billboard data represent the first ten chords of the circle. 
 
-```{r echo = FALSE, warning = FALSE, message = FALSE, fig.align = "center", fig.width = 6.8, fig.asp = 1.14}
 
-###POLAR CHART
- 
-# Creating a bar plot from bb_count
-# chords_fct <- bb_count %>% select(chord) %>% 
-#   factor(chord, levels = c("C maj", "G maj", "D maj", "A maj", "E maj", "B maj", "F# maj", "C# maj", 
-#                            "Cb maj", "Gb maj", "Db maj", "Ab maj", "Eb maj", "Bb maj", "F maj"))
+```{r echo = FALSE, warning = FALSE, message = FALSE, fig.align = "center", fig.width = 7.1, fig.asp = 1.11}
 
+### POLAR CHART
+# Creating a polar plot of the circle of fifths
 bb_count_ <- bb %>% 
-count(chord) %>% 
-arrange(desc(n)) %>%
-   mutate(share = round(n/sum(n)*100, 2),
-         chord = reorder(chord, share)) %>%
-   mutate(share = n/sum(n),
-         chord = reorder(chord, share)) %>%
-   filter(chord %in% c("C:maj", "G:maj", "D:maj", "A:maj", "E:maj", 
-                       "B:maj",
-                       "F#:maj","Gb:maj",                       "Db:maj", 
-                       "Ab:maj", "Eb:maj", "Bb:maj", "F:maj"))
-  
- bb_count_$chord <- gsub(":maj", " major", bb_count_$chord) # change maj to major
+             count(chord) %>% 
+             arrange(desc(n)) %>%
+             mutate(share = round(n/sum(n)*100, 2),
+                    chord = reorder(chord, share)) %>%
+             mutate(share = n/sum(n),
+                    chord = reorder(chord, share)) %>%
+            filter(chord %in% c("C:maj", "G:maj", "D:maj", "A:maj", "E:maj", 
+                                "B:maj", "F#:maj","Gb:maj", "Db:maj", 
+                                "Ab:maj", "Eb:maj", "Bb:maj", "F:maj"))
 
+ # Change maj to major 
+ bb_count_$chord <- gsub(":maj", " major", bb_count_$chord)
+
+ # Coerce F#/Gb major
  bb_count_FsGf <- bb_count_ %>%
-   filter(chord %in% c("F# major","Gb major")) %>%
-   summarize(n = sum(n), share = sum(share)) %>%
-   mutate(chord = "F#/Gb major")
+                  filter(chord %in% c("F# major","Gb major")) %>%
+                  summarize(n = sum(n), share = sum(share)) %>%
+                  mutate(chord = "F#/Gb major")
 
  bb_count_circle <- rbind(bb_count_, bb_count_FsGf) %>%
-   filter(!chord %in% c("F# major", "Gb major"))
+                    filter(!chord %in% c("F# major", "Gb major"))
 
  bb_count_labels <- bb_count_circle %>%
-   mutate(label = paste0(chord,"\n", paste(round(share*100, digits = 1), "%", sep = "")))
+                    mutate(label = paste0(chord,"\n", paste(round(share*100, digits = 1), "%", sep = "")))
 
  bb_count_labels$chord <- factor(bb_count_labels$chord,
-                                 levels = c("F major","Bb major", "Eb major", "Ab major", "Db major",
-                                            "F#/Gb major", "B major", "E major", "A major", "D major", "G major", "C major"))
+                                 levels = c("F major","Bb major", "Eb major", "Ab major", 
+                                            "Db major", "F#/Gb major", "B major", "E major", 
+                                            "A major", "D major", "G major", "C major"))
 
 
-  common.chords <- ggplot(bb_count_labels, aes(x = fct_reorder(label, desc(chord)), y = share, 
-                                               fill =   share)) +
-                  geom_col(position = position_stack()) +
-                  coord_polar(start = -pi/12) +
-                  scale_y_continuous(expand = c(0, 0, -0.03, 0)) +
-                  scale_fill_gradient(low = "#CC0044", high = "#CC0044") + # #DC143C crimson
-                  theme_minimal() +
-                  theme(legend.position = "none",
-                        axis.title = element_blank(),
-                        axis.text.y = element_blank(),
-                        axis.text.x = element_text(family = "Source Sans Pro", 
+  common.chords <- ggplot(bb_count_labels, aes(x = fct_reorder(label, desc(chord)), y = share, fill =   share)) +
+                   geom_col(position = position_stack()) +
+                   coord_polar(start = -pi/12) +
+                   scale_y_continuous(expand = c(0, 0, -0.03, 0)) +
+                   scale_fill_gradient(low = "#CC0044", high = "#CC0044") + # #DC143C crimson
+                   theme_minimal() +
+                   theme(legend.position = "none",
+                         axis.title = element_blank(),
+                         axis.text.y = element_blank(),
+                         axis.text.x = element_text(family = "Source Sans Pro", 
                                                    size = 12, color = "white",
                                                    face = "bold",
                                                    margin = margin(0, 0, -5, 0, "mm")),
-                        axis.ticks.x = element_blank(),#element_line(size = 0.5, color = "grey"),
-                        axis.ticks.y = element_blank(),
-                        axis.ticks.length = unit(1, "mm"),
-                        panel.grid.major.y = element_blank(),
-                        panel.grid.major.x = element_line(color = "#808080", 
+                         axis.ticks.x = element_blank(),
+                         axis.ticks.y = element_blank(),
+                         axis.ticks.length = unit(1, "mm"),
+                         panel.grid.major.y = element_blank(),
+                         panel.grid.major.x = element_line(color = "#BABABA", 
                                                           linetype = "dotted"),
-                        panel.grid.minor.y = element_blank(),
-                        panel.grid.minor.x = element_blank(),
-                        panel.background = element_rect(fill = "black"),
-                        plot.margin = unit(c(4, 5, 1, 5), "mm"),
-                        plot.background = element_rect(fill = "black"),
-                        plot.title = element_text(family = "Source Sans Pro", 
-                                                  size = 16, color = "white", 
-                                                  face = "bold", 
-                                                  hjust = 0.5,
-                                                  #margin = margin(b = 10, r = 20, l = 20, unit = "pt")
-                                                  ),
+                         panel.grid.minor.y = element_blank(),
+                         panel.grid.minor.x = element_blank(),
+                         panel.background = element_rect(fill = "black"),
+                         plot.margin = unit(c(4, 5, 1, 5), "mm"),
+                         plot.background = element_rect(fill = "black"),
+                         plot.title = element_text(family = "Source Sans Pro", 
+                                                   size = 16, color = "white", 
+                                                   face = "bold", 
+                                                    hjust = 0.5),
                         plot.subtitle = element_text(family = "Source Sans Pro", 
                                                      size = 18, 
                                                      color = "white", 
@@ -170,149 +176,353 @@ arrange(desc(n)) %>%
                                                     color = "white",  
                                                     hjust = 1,
                                                     margin = margin(t = 20, unit = "pt"))) +
-                  labs(title = "Percentage of the total chord count from the top 100 
-                       Billboard songs \nbetween 1958 and 1991 in the circle of fifths",
+                  labs(title = "Percentage of the total chord count from the top 100 Billboard songs \nbetween 1958 and 1991 in the circle of fifths",
                        #subtitle = "in the outermost circle of fifths",
                        caption = "Topic: Kris Shaffer, DataCamp project | 
-                       Data: McGill Billboard Dataset | ggplot2 chart: M. Blum-Oeste") #+
-                    # geom_text(aes(label = ifelse(share > 0.0008, paste(round(share*100, digits = 1),
-                    #"%", sep = ""), paste(""))),
-                   #position = position_stack(vjust = 1), color = "white", size = 5)
+                       Data: McGill Billboard Dataset | ggplot2 chart: M. Blum-Oeste") 
   # View plot
   common.chords
 
-
 ```
 
-
-<br><br>
+<br>
 
 ## 4. Chord "bigrams"
-<p>Just as some chords are more common and more idiomatic than others, not all chord <em>progressions</em> are created equal. To look for common patterns in the structuring of chord progressions, we can use many of the same modes of analysis used in text-mining to analyze phrases. A chord change is simply a *bigram* -  a two-"word" phrase - composed of a starting chord and a following chord. Here are the top 12 of the most common two-chord "phrases" in the McGill Billboard dataset.
+<p>Just as some chords are more common and more idiomatic than others, not all chord <em>progressions</em> are created equal. To look for common patterns in the structuring of chord progressions, we can use many of the same modes of analysis used in text-mining to analyze phrases. A chord change is simply a *bigram* -  a two-"word" phrase - composed of a starting chord and a following chord. Here are the top 12 of the most common two-chord "phrases" in the McGill Billboard dataset. 
 
-
+### Top 12 of the most common bigrams
 ```{r echo = FALSE, warning = FALSE, message = FALSE}
 
 # Wrangling and counting bigrams
 bb_bigram_count <- bb %>%
-       mutate(next_chord = lead(chord),
-          next_title = lead(title),
-           bigram = paste(chord, next_chord)) %>%
-    filter(!title != next_title) %>%
-    count(bigram) %>%
-    arrange(desc(n)) 
+                   mutate(next_chord = lead(chord),
+                          next_title = lead(title),
+                          bigram = paste(chord, next_chord)) %>%
+                  filter(!title != next_title) %>%
+                  count(bigram) %>%
+                  arrange(desc(n)) 
 
-# Displaying the first 20 rows of bb_bigram_count
+# Displaying the first 12 rows of bb_bigram_count
 kable(head(rename(bb_bigram_count, 'Chord Progressions' = bigram, 'Amount in the Billboard dataset' = n ), 12),
       align = "cc",
       #caption = "Top 12 of the two-chord phrases in the McGill Billboard dataset"
       ) %>%
-          kable_styling(full_width = FALSE, position = "center", bootstrap_options = "striped", font_size = 14)
+     kable_styling(full_width = FALSE, position = "center", bootstrap_options = "striped", font_size = 14)
 
 ```
 
-
+<br>
 
 ## 5. Visualizing the most common chord progressions
-<p>We can get a better sense of just how popular some of these chord progressions are if we plot them as a percentage of the top 12 most common chord progressions on a bar chart. </p>
+<p>We can get a better sense of just how popular some of these chord progressions are if we plot them as a percentage of the top 12 most common chord progressions on a bar chart. The chart mimics a keyboard.</p>
 
-```{r echo = FALSE, warning = FALSE, message = FALSE, fig.align = "center", fig.width = 6.8, fig.asp = 1.14}
 
+```{r echo = FALSE, warning = FALSE, message = FALSE, fig.align = "center", fig.width = 6.8, fig.asp = 0.9}
+
+# Find percentage of bigrams
 bb_bigram_perc <- bb_bigram_count %>%
                     slice(1:12) %>%
-                    mutate(share = n/sum(n)) 
+                    mutate(share = n/sum(n))
+
+# Delete : in the chord names
 bb_bigram_perc$bigram <- gsub(":maj", "maj  ", bb_bigram_perc$bigram) 
   
-  
-  ggplot(bb_bigram_perc, aes(x = reorder(bigram, n), y = share, fill = n)) +
-  geom_col() +
-  coord_flip() +
-  scale_y_continuous(labels = percent_format(accuracy = 1), expand = c(0, 0), breaks = pretty_breaks(n = 10)) +
-  #scale_fill_gradient(low = "#0095CC", high = "#CC0044") +
-  scale_fill_gradient(low = "white", high = "white") +
-  #xlab("Chord changes") +
-  #ylab("% from 20 songs") +
-  theme_minimal() +
-  theme(legend.position = "none",
-        axis.text.x = element_text(family = "Source Sans Pro", size = 16, color = "white", face = "bold"),
-        axis.text.y = element_blank(),
-        axis.title.x = element_blank(),#element_text(family = "Source Sans Pro", size = 16, color = "white", face = "bold"),
-        #axis.line.x = element_line(size = 1, color = "red"),
-        axis.ticks.x = element_line(size = 0.5, color = "grey"),
-        axis.ticks.y = element_blank(),
-        axis.ticks.length = unit(1, "mm"), 
-        panel.grid.major.y = element_blank(),
-        panel.grid.major.x = element_line(color = "grey", linetype = "dotted"),
-        panel.grid.minor.y = element_blank(),
-        panel.grid.minor.x = element_blank(),
-        plot.margin = unit(c(20, 40, 10, 10), "pt"),
-        plot.background = element_rect(fill = "black", colour = NA), 
-        plot.title = element_text(family = "Source Sans Pro", size = 16, color = "white", face = "bold", hjust = 0.6,
-                                  margin = margin(b = 10, unit = "pt")),
-        plot.subtitle = element_text(family = "Source Sans Pro", size = 14, color = "white", face = "bold", hjust = 0.5,
-                                     margin = margin(b = 10, unit = "pt")),
-        plot.caption = element_text(family = "Source Sans Pro", size = 10, color = "white",
-                                    margin = margin(t = 20, unit = "pt"))) +
-  labs(title = "Share of the top 12 most common chord progressions (bigrams)",
-       subtitle = "in the McGill Billboard Dataset", 
-       caption = "Topic: Kris Shaffer, DataCamp project | 
+
+# Create plot
+common_bigrams <- ggplot(bb_bigram_perc, aes(x = reorder(bigram, n), y = share, fill = n)) +
+                  geom_col() +
+                  coord_flip() +
+                  scale_y_continuous(labels = percent_format(accuracy = 1), 
+                                     expand = c(0.005, 0.005), 
+                                     breaks = pretty_breaks(n = 10)) +
+                  scale_fill_gradient(low = "white", high = "white") +
+                  theme_minimal() +
+                  theme(legend.position = "none",
+                        axis.text.x = element_text(family = "Source Sans Pro", size = 16, color = "white", face = "bold"),
+                        axis.text.y = element_blank(),
+                        axis.title.x = element_blank(),#element_text(family = "Source Sans Pro", size = 16, color = "white", face = "bold"),
+                        axis.ticks.x = element_line(size = 0.5, color = "grey"),
+                        axis.ticks.y = element_blank(),
+                        axis.ticks.length = unit(1, "mm"), 
+                        panel.grid.major.y = element_blank(),
+                        panel.grid.major.x = element_line(color = "grey", linetype = "dotted"),
+                        panel.grid.minor.y = element_blank(),
+                        panel.grid.minor.x = element_blank(),
+                        plot.margin = unit(c(20, 40, 10, 10), "pt"),
+                        plot.background = element_rect(fill = "black", colour = NA), 
+                        plot.title = element_text(family = "Source Sans Pro", 
+                                                  size = 16, color = "white", 
+                                                  face = "bold", hjust = 0.6,
+                                                  margin = margin(b = 10, unit = "pt")),
+                        plot.subtitle = element_text(family = "Source Sans Pro", 
+                                                     size = 14, color = "white", 
+                                                     face = "bold", 
+                                                     hjust = 0.5,
+                                                     margin = margin(b = 10, unit = "pt")),
+                        plot.caption = element_text(family = "Source Sans Pro", 
+                                                    size = 10, 
+                                                    color = "white",
+                                                    margin = margin(t = 20, unit = "pt"))) +
+                labs(title = "Share of the top 12 most common chord progressions (bigrams)",
+                     subtitle = "in the McGill Billboard Dataset", 
+                     caption = "Topic: Kris Shaffer, DataCamp project | 
                        Data: McGill Billboard Dataset | ggplot2 chart: M. Blum-Oeste") +
-  geom_label(aes(label = paste0(bigram, "   ", round(share*100, 1), "%")), fill = "black", 
-             position = position_stack(0), hjust = -0.01, label.padding  = unit(0.41, "lines"),
-             family = "Source Sans Pro", size = 7, color = "white", fontface = "bold") #+
-  #geom_text(aes(label = paste0(round(share*100, 1), "%")), position = position_stack(1), hjust = 1,
-   #         family = "Source Sans Pro", size = 6, color = "black", face = "bold")
-
-
+               geom_label(aes(label = paste0(bigram, "   ", round(share*100, 1), "%")), fill = "black", 
+                          position = position_stack(0), 
+                          hjust = -0.01, 
+                          label.padding  = unit(0.41, "lines"),
+                          family = "Source Sans Pro", 
+                          size = 4, color = "white", 
+                          fontface = "bold")
+# View plot
+common_bigrams
 
 ```
 
-
-
-<br><br>
+<br>
 
 ## 6. Finding the most common artists
 <p>As noted above, the most common chords (and chord bigrams) are those that are easy to play on both the guitar and the piano. If the degree to which these chords are idiomatic on guitar or piano (or both) <em>determine</em> how common they are, we would expect to find the more idiomatic guitar chords (C, G, D, A, and E major) to be more common in guitar-driven songs, but we would expect the more idiomatic piano chords (C, F, G, D, and B-flat major) to be more common in piano-driven songs. (Note that there is some overlap between these two instruments.)</p>
 <p>The McGill Billboard dataset does not come with songs tagged as "piano-driven" or "guitar-driven," so to test this hypothesis, we'll have to do that manually. Rather than make this determination for every song in the corpus, let's focus on just a few to see if the hypothesis has some validity. If so, then we can think about tagging more artists in the corpus and testing the hypothesis more exhaustively.</p>
 <p>Here are the 30 artists with the most songs in the corpus. From this list, we'll extract a few artists who are obviously heavy on guitar or piano to compare.</p>
 
+### Artists with the most songs in the dataset
+
 ```{r echo = FALSE, warning = FALSE, message = FALSE}
 
 # Finding 30 artists with the most songs in the corpus
 bb_30_artists <- bb %>%
-    select(artist, title) %>%
-    unique() %>%
-    count(artist) %>%
-  filter(n >= 4) %>%
-  arrange(desc(n))
+                 select(artist, title) %>%
+                 unique() %>%
+                 count(artist) %>%
+                 filter(n >= 4) %>%
+                 arrange(desc(n))
   
 # Displaying 30 artists with the most songs in the corpus
 kable(head(rename(bb_30_artists, 'Artist' = artist, 'Number of Songs' = n ), 34),
-      align = "cc",
-      #caption = "Top 12 of the two-chord phrases in the McGill Billboard dataset"
-      ) %>%
-          kable_styling(full_width = FALSE, position = "center", bootstrap_options = "striped", font_size = 14)
+      align = "cc") %>%
+      kable_styling(full_width = FALSE, position = "center", bootstrap_options = "striped", font_size = 14)
 
 ```
 
 
+```{r echo = FALSE, warning = FALSE, message = FALSE}
 
+# Selection of artists who are heavy in piano or guitar
+tags <- tibble(artist = c('Abba', 'Billy Joel', 'Elton John', 'Stevie Wonder', 'Pet Shop Boys', 
+                          'The Rolling Stones', 'Eric Clapton', 'Jackson Browne', 'Led Zeppelin', 'Pink Floyd'), 
+              instrument = c('piano', 'piano', 'piano', 'piano', 'piano', 
+                             'guitar', 'guitar', 'guitar', 'guitar', 'guitar'))
+
+# Creating a new dataframe bb_tagged that includes a new column instrument from tags
+bb_tagged <- bb %>% 
+             inner_join(tags)
+
+# Calculate numebr of songs
+num_songs <- bb_tagged %>% 
+             group_by(title, artist, instrument) %>% 
+             count() %>% 
+             group_by(artist, instrument) %>% 
+             count() %>% 
+             arrange(instrument)
+
+num_songs_instruments <- num_songs %>% 
+                         group_by(instrument) %>% 
+                         summarize(no_songs = sum(n))
+
+```
+
+<br>
 
 ## 7. Tagging the corpus
-<p>There are relatively few artists in this list whose music is demonstrably "piano-driven," but we can identify a few that generally emphasize keyboards over guitar: Abba, Billy Joel, Elton John, and Stevie Wonder Ã¢â‚¬â€? totaling 17 songs in the corpus. There are many guitar-centered artists in this list, so for our test, we'll focus on three well known, guitar-heavy artists with a similar number of songs in the corpus: The Rolling Stones, The Beatles, and Eric Clapton (18 songs).</p>
+<p>There are relatively few artists in this list whose music is demonstrably "piano-driven," but we can identify a few that generally emphasize keyboards over guitar: Abba, Billy Joel, Elton John, Stevie Wonder and Pet Shop Boys totaling `r num_songs_instruments[2, 2]` songs in the corpus. There are many guitar-centered artists in this list, so for our test, we'll focus on three well known, guitar-heavy artists with a similar number of songs in the corpus: The Rolling Stones, Eric Clapton, Jackson Browne, Led Zeppelin, Pink Floyd (`r num_songs_instruments[1, 2]` songs).</p>
 <p>Once we've subset the corpus to only songs by these seven artists and applied the "piano" and "guitar" tags, we can compare the chord content of piano-driven and guitar-driven songs.</p>
 
+### Selected guitar- and piano-driven artists
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+
+# Displaying the new data frame
+kable(rename(num_songs, 'Artist' = artist, 'Instrument' = instrument, 'Number of Songs' = n ),
+      align = "cc") %>%
+      kable_styling(full_width = FALSE, position = "center", bootstrap_options = "striped", font_size = 14)
+
+``` 
+
+<br>
+
 ## 8. Comparing chords in piano-driven and guitar-driven songs
-<p>Let's take a look at any difference in how common chords are in these two song groups. To clean things up, we'll just focus on the 20 chords most common in the McGill Billboard dataset overall.</p>
-<p>While we want to be careful about drawing any conclusions from such a small set of songs, we can see that the chords easiest to play on the guitar <em>do</em> dominate the guitar-driven songs, especially G, D, E, and C major, as well as A major and minor. Similarly, "flat" chords (B-flat, E-flat, A-flat major) occur frequently in piano-driven songs, though they are nearly absent from the guitar-driven songs. In fact, the first and fourth most frequent piano chords are "flat" chords that occur rarely, if at all, in the guitar songs.</p>
+<p>Let's take a look at any difference in how common chords are in these two song groups. To clean things up, we'll just focus on the 13 chords most common in the McGill Billboard dataset and included in the circle of fifths.</p>
+<p>While we want to be careful about drawing any conclusions from such a small set of songs, we can see that the chords easiest to play on the guitar <em>do</em> dominate the guitar-driven songs, especially the first five from the circle of fifths. Similarly, "flat" chords (B-flat, F, D major) occur frequently in piano-driven songs, though two first are nearly absent from the guitar-driven songs.</p>
 <p>So with all the appropriate caveats, it seems like the instrument-based-harmony hypothesis does have some merit and is worth further examination.</p>
 
+
+```{r echo = FALSE, warning = FALSE, message = FALSE, fig.align = "center", fig.width = 8, fig.asp = 0.8}
+
+# The top 13 most common chords
+top_13 <- c("C:maj", "G:maj", "D:maj", "A:maj", "E:maj", 
+            "B:maj","F#:maj","Gb:maj", "Db:maj", 
+            "Ab:maj", "Eb:maj", "Bb:maj", "F:maj")
+
+# Comparing the frequency of the 13 most common chords in piano- and guitar-driven songs
+chords_guitar_piano <- bb_tagged %>%
+                       filter(chord %in% top_13) %>%
+                       count(chord, instrument)
+
+# Change the chords from :maj to major 
+chords_guitar_piano$chord <- gsub(":maj", " major", chords_guitar_piano$chord)
+
+# Factor chords in the order of the circle of fifths
+chords_guitar_piano$chord <- factor(chords_guitar_piano$chord,
+                                    levels = c("F major","Bb major", "Eb major", 
+                                                "Ab major", "Db major", "F# major", 
+                                                "Gb major", "B major", "E major", 
+                                                "A major", "D major", "G major", "C major"))
+# Create plot
+chords_instruments <- ggplot(chords_guitar_piano, aes(x = chord, y = n, fill = instrument)) +
+                      geom_col() +
+                      facet_grid(. ~instrument) +
+                      coord_flip() +
+                      scale_fill_manual(values = c("#CC0044", "white")) +
+                      scale_y_continuous(expand = c(0, 0), breaks = pretty_breaks(n = 9)) +
+                      xlab("Chords") +
+                      ylab("Number of chords") +
+                      theme_minimal() +
+                      theme(legend.position = "none",
+                            axis.text = element_text(family = "Source Sans Pro", 
+                                                     size = 14, 
+                                                     color = "white", 
+                                                     face = "bold"),
+                            axis.ticks.x = element_line(size = 0.5, 
+                                                        color = "grey"),
+                            axis.ticks.y = element_blank(),
+                            axis.ticks.length = unit(1, "mm"), 
+                            strip.text = element_text(colour = "white", 
+                                                      family = "Source Sans Pro", 
+                                                      size = 14, 
+                                                      face = "bold"), 
+                            strip.background = element_rect(fill = "black"), 
+                            panel.grid.major.y = element_blank(),
+                            panel.grid.major.x = element_line(color = "grey", 
+                                                              linetype = "dotted"),
+                            panel.grid.minor.y = element_blank(),
+                            panel.grid.minor.x = element_blank(),
+                            panel.spacing.x = unit(10, "mm"),
+                            plot.margin = unit(c(20, 40, 10, 0), "pt"),
+                            plot.background = element_rect(fill = "black", 
+                                                           colour = NA), 
+                            plot.title = element_text(family = "Source Sans Pro", 
+                                                      size = 16, 
+                                                      color = "white", 
+                                                      face = "bold", 
+                                                      hjust = 0.9,
+                                                      margin = margin(b = 10, unit = "pt")),
+                            plot.subtitle = element_text(family = "Source Sans Pro", 
+                                                         size = 14, 
+                                                         color = "white", 
+                                                         face = "bold", 
+                                                         hjust = 0.5,
+                                                         margin = margin(b = 10, unit = "pt")),
+                            plot.caption = element_text(family = "Source Sans Pro", 
+                                                        size = 10, 
+                                                        color = "white",
+                                                        margin = margin(t = 20, unit = "pt"))) +
+                      labs(title = "Number of the most common chords in selected guitar and piano songs",
+                           subtitle = "McGill Billboard Dataset",
+                           caption = "Topic: Kris Shaffer, DataCamp project | 
+                                           Data: McGill Billboard Dataset | ggplot2 chart: M. Blum-Oeste")
+#View plot
+chords_instruments
+
+```
+
+<br>
+
 ## 9. Comparing chord bigrams in piano-driven and guitar-driven songs
-<p>Since chord occurrence and chord bigram occurrence are naturally strongly tied to each other, it would not be a reach to expect that a difference in chord frequency would be reflected in a difference in chord bigram frequency. Indeed that is what we find.</p>
+<p>Since chord occurrence and chord bigram occurrence are naturally strongly tied to each other, it would not be a reach to expect that a difference in chord frequency would be reflected in a difference in chord bigram frequency. Indeed that is what we find. The chart presents the most common bigrams in order of appereance in the top 12 most common bigrams (the white-black chart). The overall low number of bigrams in piano-driven songs results from the higher number of bigrams involving another chords.</p>
+
+```{r echo = FALSE, warning = FALSE, message = FALSE, fig.align = "center", fig.width = 8, fig.asp = 0.8}
+
+# The top 20 most common bigrams
+top_12_bigram <- bb_bigram_count$bigram[1:12]
+
+# Creating a faceted plot comparing guitar- and piano-driven songs for bigram frequency
+bigrams_guitar_piano <- bb_tagged %>%
+                        mutate(next_chord = lead(chord),
+                               next_title = lead(title),
+                               bigram = paste(chord, next_chord)) %>%
+                        filter(!title != next_title) %>%
+                        filter(bigram %in% top_12_bigram) %>%
+                        count(bigram, instrument) 
+
+# Change chords from :maj to maj
+bigrams_guitar_piano$bigram <- gsub(":maj", "maj  ", bigrams_guitar_piano$bigram) 
+
+# Factor chords in order of frequency
+bigrams_guitar_piano$bigram <- factor(bigrams_guitar_piano$bigram) 
+
+# Create plot
+bigram_instruments <- ggplot(bigrams_guitar_piano, aes(x = bigram, y = n, fill = instrument)) +
+                        geom_col() +
+                        facet_grid(. ~instrument) +
+                        coord_flip() +
+                        scale_fill_manual(values = c("#CC0044", "white")) +
+                        xlab("Bigram") +
+                        ylab("Number of bigrams") +
+                        theme_minimal() +
+                        theme(legend.position = "none",
+                              axis.text = element_text(family = "Source Sans Pro", 
+                                                       size = 14, 
+                                                       color = "white", 
+                                                       face = "bold"),
+                              axis.ticks.x = element_line(size = 0.5, 
+                                                          color = "grey"),
+                              axis.ticks.y = element_blank(),
+                              axis.ticks.length = unit(1, "mm"), 
+                              strip.text = element_text(colour = "white", 
+                                                        family = "Source Sans Pro", 
+                                                        size = 16, 
+                                                        face = "bold"), 
+                              strip.background = element_rect(fill = "black"), 
+                              panel.grid.major.y = element_blank(),
+                              panel.grid.major.x = element_line(color = "grey", 
+                                                                linetype = "dotted"),
+                              panel.grid.minor.y = element_blank(),
+                              panel.grid.minor.x = element_blank(),
+                              panel.spacing.x = unit(10, "mm"),
+                              plot.margin = unit(c(20, 40, 10, 0), "pt"),
+                              plot.background = element_rect(fill = "black", 
+                                                             colour = NA), 
+                              plot.title = element_text(family = "Source Sans Pro", 
+                                                        size = 16, 
+                                                        color = "white", 
+                                                        face = "bold", 
+                                                        hjust = 1.7,
+                                                        margin = margin(b = 10, unit = "pt")),
+                              plot.subtitle = element_text(family = "Source Sans Pro", 
+                                                           size = 14, 
+                                                           color = "white", 
+                                                           face = "bold", 
+                                                           hjust = 0.5,
+                                                           margin = margin(b = 10, unit = "pt")),
+                              plot.caption = element_text(family = "Source Sans Pro", 
+                                                          size = 10, 
+                                                          color = "white",
+                                                          margin = margin(t = 20, unit = "pt"))) +
+                        labs(title = "Number of the most common bigrams in guitar und piano songs",
+                             subtitle = "McGill Billboard Dataset",
+                             caption = "Topic: Kris Shaffer, DataCamp project | 
+                                             Data: McGill Billboard Dataset | ggplot2 chart: M. Blum-Oeste")
+#View plot
+bigram_instruments
+
+```
+
+<br>
 
 ## 10. Conclusion
 <p>We set out asking if the degree to which a chord is "idiomatic" on an instrument affects how frequently it is used by a songwriter. It seems that is indeed the case. In a large representative sample of pop/rock songs from the historical Billboard charts, the chords most often learned first by guitarists and pianists are the most common. In fact, chords commonly deemed <em>easy</em> or <em>beginner-friendly</em> on <strong>both</strong> piano and guitar are far and away the most common in the corpus.</p>
-<p>We also examined a subset of 35 songs from seven piano- and guitar-heavy artists and found that guitarists and pianists tend to use different sets of chords for their songs. This was an extremely small (and likely not representative) sample, so we can do nothing more than hypothesize that this trend might carry over throughout the larger dataset. But it seems from this exploration that it's worth a closer look.</p>
+<p>We also examined a subset of 39 songs from seven piano- and guitar-heavy artists and found that guitarists and pianists tend to use different sets of chords for their songs. This was an extremely small (and likely not representative) sample, so we can do nothing more than hypothesize that this trend might carry over throughout the larger dataset. But it seems from this exploration that it's worth a closer look.</p>
 <p>There are still more questions to explore with this dataset. What about band-driven genres like classic R&amp;B and funk, where artists like James Brown and Chicago build chords from a large number of instruments each playing a single note? What about "progressive" bands like Yes and Genesis, where "easy" and "idiomatic" may be less of a concern during the songwriting process? And what if we compared this dataset to a collection of chords from classical songs, jazz charts, folk songs, liturgical songs?</p>
 <p>There's only one way to find out!</p>
 
