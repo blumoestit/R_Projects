@@ -1,12 +1,9 @@
 ---
-title: "McGill Billboard Chords Data"
-subtitle: "Data Wrangling and Visualization"
-author: "Magdalena Blum-Oeste"
-date: "4/28/2020"
-output: 
-  prettydoc::html_pretty:
-    theme: tactile
-    #highlight: github
+title: "R Notebook"
+output:
+  html_document:
+    df_print: paged
+  html_notebook: default
 ---
 Modified DataCamp Project *Wrangling and Visualizing Musical Data* by Kris Shaffer
 
