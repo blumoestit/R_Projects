@@ -1,6 +1,6 @@
 ---
-title: "McGill Billboard Chords Data"
-subtitle: "Data Wrangling and Visualization"
+title: "Data Visualization Meets Music"
+subtitle: "Data Wrangling and Visualization in R"
 author: "Magdalena Blum-Oeste"
 date: "4/28/2020"
 output: 
@@ -8,14 +8,14 @@ output:
     theme: tactile
     #highlight: github
 ---
-Modified DataCamp Project *Wrangling and Visualizing Musical Data* by Kris Shaffer
+This project has been inspired by the idea of **Wrangling and Visualizing McGill Billboard Chords Data** published by Kris Shaffer from *DataCamp Projects*.
 
-## 1. Introduction
-<p>How do musicians choose the chords they use in their songs? Do guitarists, pianists, and singers gravitate towards different kinds of harmony?</p>
-<p>We can uncover trends in the kinds of chord progressions used by popular artists by analyzing the harmonic data provided in the <a href="http://ddmal.music.mcgill.ca/research/billboard">McGill Billboard Dataset</a>. This dataset includes professionally tagged chords for several hundred pop/rock songs representative of singles that made the Billboard Hot 100 list between 1958 and 1991. Using the data-wrangling tools available in the <code>dplyr</code> package, and the visualization tools available in the <code>ggplot2</code> package, we can explore the most common chords and chord progressions in these songs, and contrast the harmonies of some guitar-led and piano-led artists to see where the "affordances" of those instruments may affect the chord choices artists make.</p>
+<br>
 
-Required CRAN packages for this coding project are:
-`pacman, tidyverse, DT, kableExtra, scales`
+# 1. Introduction
+<p>The purpose of this project is to present an insight into a dataset designed for musicological studies. We use the [McGill Billboard Database](https://ddmal.music.mcgill.ca/research/The_McGill_Billboard_Project_(Chord_Analysis_Dataset)/), a systematically sampled and professionally curated collection of chord transcriptions of harmony in pop songs presented by Burgoyne et al. (2011).
+Using only the data-wrangling tools available in the <code>dplyr</code> package, and the visualization tool available in the <code>ggplot2</code> package, we can explore the most common chords and chord progressions in the McGill Billboard songs, and compare the harmony of a few selected guitar- and piano-led artists. We aslo check whether the different character of these instruments can influence the chord selection that artists make.
+</p>
 
 ```{r setup, include = FALSE}
 
@@ -60,7 +60,15 @@ plot_caption <- "Topic: Kris Shaffer, DataCamp project | Data: McGill Billboard 
 ```
 
 
-### Sample of Billboard chords data table
+## The McGill Billboard chords data
+
+<p>The McGill Billboard Data is a result of the PhD thesis "Stochastic processes and database-driven musicology" published in 2012 by John Ashley Burgoyne at the McGill University Montréal. Burgoyne (2012) presents a dataset of the most played chords from more than 1000 pop songs from the latter half of the twentieth century (1958-1991), as ranked by Billboard magazine’s Hot 100 chart. The Billboard Magazine has published weekly since 4th August 1958 the top 100 pop singles available for sale in the United States. There was a substantial change to the methodology for computing the Hot 100 in 1991 by the Billboard in November 1991 (Burgoyne, 2012). This date determines the end date of the dataset. The cut  has been necessary to maintain a uniform sampling procedure. 
+
+It has to be noted that the randomly selected Billboard tracks in the McGill database represent only the very most popular songs locally limited to the US. Therefore, we should not draw conclusions about music in general based only on a sample included in this data.
+</p>
+
+
+### Sample of the McGill Billboard data table
 ```{r echo = FALSE, warning = FALSE, message = FALSE}
 
 # Reading in the McGill Billboard chord data
@@ -74,8 +82,13 @@ kable(head(bb, 7)#,
 
 ```
 
+<br>
 
-### List of Artists
+
+# 2. The Analysis with R 'tidyverse' Package
+<p>Required CRAN packages for this coding project are:
+`tidyverse, DT, kableExtra, scales`
+</p>
 
 ```{r echo = FALSE, warning = FALSE, message = FALSE}
 
@@ -85,6 +98,15 @@ artists <- bb %>%
   unique() %>% 
   arrange(artist) %>%
   rename("Artist" = "artist", "Song" = "title", "Year" = "year")
+
+``` 
+
+## The most popular Artists
+<p>The McGill Billboard Dataset includes `r length(unique(artists$Artist))` artists randomly sampled from the Billboard's top 100 (1958-1991) using an extraction algorithmus, described in detail by Burgoyne (2012). You are certainly curious if your favourite pop artist is in the dataset. Check it in the table below. Bee Gees unfortunately is not included!</p>
+
+### List of Artists
+<div style = "width:80%; height:auto; margin: auto;">
+```{r echo = FALSE, warning = FALSE, message = FALSE}
 
 # Table List of Artists
 font.size <- "10pt"
@@ -96,16 +118,19 @@ datatable(as.data.frame(artists), #caption = "Billboard artists and songs data t
               "}")))
 
 ```
-
+</div>
 <br>
 
-## 2. The most common chords
-<p>As seen in the previous task, this is a <em>tidy</em> dataset: each row represents a single observation, and each column a particular variable or attribute of that observation. Note that the metadata for each song (title, artist, year) is repeated for each chord -- like "I Don't Mind" by James Brown, 1961 -- while the unique attributes of each chord (chord symbol, chord quality, and analytical designations like integer and Roman-numeral notation) is included once for each chord change.</p>
-<p>A key element of the style of any popular musical artist is the kind of chords they use in their songs. But not all chords are created equal! In addition to differences in how they sound, some chords are simply easier to play than others. On top of that, some chords are easier to play on one instrument than they are on another. And while master musicians can play a wide variety of chords and progressions with ease, it's not a stretch to think that even the best musicians may choose more "idiomatic" chords and progressions for their instrument.</p>
-<p>To start to explore that, let's look at the most common chords in the McGill Billboard Dataset.</p>
+## The most common chords in the McGill Billboard
+<p>A chord is a simultaneity of notes, heard as some sort of unit. It is a basic component of harmony, a fundamental element of music beside the rhythm, dynamic, timbre and texture. The kind of chords which artists use in their songs may be a signature feature of a music genere or even of an artist. Beside the differences how the chords sound, some chords are easier to play than other on particular instruments. Because the McGill Billboard data consists of a one genere -- the pop misic, we can check if there is a prevalence of chords played, depending on the instrument. 
+
+Thus, at first we answer a basic question: which chords are more commonly played than others? The table below shows that the first ten chords are major chords, followed by A and E minor. These top ten McGill Billboard chords occur in the outermost circle of fifths, which is a geometrical representation of the relationship among the 12 pitch classes of the chromatic scale. Hence, it is more exiting to display these most common chords in a circle than just as a bar chart. However, due to the order of the chords in the outermost circle of fifths, it includes the 10 most common major chords extended by Db major and F#/Gb major, the latter summed to one value, from the 13th, 26th and 27th position in the McGill Billboard ranking, respectively. 
+
+Caution: the chart is a circle of fifths, the percentages **do not sum to 100%**. 
+</p>
 
 ### Amount and share of recorded chords
-
+<div style = "width:80%; height:auto; margin: auto;">
 ```{r echo = FALSE, warning = FALSE, message = FALSE}
 # Counting the most common chords
 bb_count <- bb %>% 
@@ -128,14 +153,8 @@ datatable(bb_count, #caption = "Amount and share of recorded chords in MsGill Bi
               "}")))
       
 ```
- 
+</div>
 <br>
-
-## 3. Visualizing the most common chords
-<p>Of course, it's easier to get a feel for just how common some of these chords are if we graph them and show the percentage of the total chord count represented by each chord.
-Musicians may notice right away that the most common chords in this corpus are chords that are easy to play on both the guitar and the piano: C, G, A, and D major and to an extent, F and E major. (They also belong to keys, or scales, that are easy to play on most instruments, so they fit well with melodies and solos, as well.) After that, there is a steep drop off in the frequency with which individual chords appear. </p>
-<p>To illustrate the most common chords, I decided to plot the percentage of the total chords in the McGill Billboard dataset in a first level of the circle of fifths because the top 10 chords of the McGill Billboard data represent the first ten chords of the circle. 
-
 
 ```{r echo = FALSE, warning = FALSE, message = FALSE, fig.align = "center", fig.width = 7.5, fig.asp = 0.9}
 
@@ -193,10 +212,13 @@ bb_count_ <- bb %>%
 
 <br>
 
-## 4. Chord "bigrams"
-<p>Just as some chords are more common and more idiomatic than others, not all chord <em>progressions</em> are created equal. To look for common patterns in the structuring of chord progressions, we can use many of the same modes of analysis used in text-mining to analyze phrases. A chord change is simply a *bigram* -  a two-"word" phrase - composed of a starting chord and a following chord. Here are the top 12 of the most common two-chord "phrases" in the McGill Billboard dataset. 
+## Chord progressions (bigrams)
 
-### Top 12 of the most common bigrams
+<p>In the Western traditional and pop music, a chord progression is a feature that defines how the melody and the rhythm are built. The simplest succesion of chords is a "bigram", a unit consisting of two chords. Similar to chords, some bigrams are played more often. The most common chords seem to be easy to play either on the guitar and the piano. 
+</p>
+
+### Top 12 of the most common bigrams in the Billboard dataset
+
 ```{r echo = FALSE, warning = FALSE, message = FALSE}
 
 # Wrangling and counting bigrams
@@ -209,7 +231,7 @@ bb_bigram_count <- bb %>%
                   arrange(desc(n)) 
 
 # Displaying the first 12 rows of bb_bigram_count
-kable(head(rename(bb_bigram_count, 'Chord Progressions' = bigram, 'Amount in the Billboard dataset' = n ), 12),
+kable(head(rename(bb_bigram_count, 'Chord Progressions' = bigram, 'Amount' = n ), 12),
       align = "cc",
       #caption = "Top 12 of the two-chord phrases in the McGill Billboard dataset"
       ) %>%
@@ -218,10 +240,6 @@ kable(head(rename(bb_bigram_count, 'Chord Progressions' = bigram, 'Amount in the
 ```
 
 <br>
-
-## 5. Visualizing the most common chord progressions
-<p>We can get a better sense of just how popular some of these chord progressions are if we plot them as a percentage of the top 12 most common chord progressions on a bar chart. The chart mimics a keyboard.</p>
-
 
 ```{r echo = FALSE, warning = FALSE, message = FALSE, fig.align = "center", fig.width = 6.8, fig.asp = 0.9}
 
@@ -265,13 +283,12 @@ common_bigrams
 
 <br>
 
-## 6. Finding the most common artists
-<p>As noted above, the most common chords (and chord bigrams) are those that are easy to play on both the guitar and the piano. If the degree to which these chords are idiomatic on guitar or piano (or both) <em>determine</em> how common they are, we would expect to find the more idiomatic guitar chords (C, G, D, A, and E major) to be more common in guitar-driven songs, but we would expect the more idiomatic piano chords (C, F, G, D, and B-flat major) to be more common in piano-driven songs. (Note that there is some overlap between these two instruments.)</p>
-<p>The McGill Billboard dataset does not come with songs tagged as "piano-driven" or "guitar-driven," so to test this hypothesis, we'll have to do that manually. Rather than make this determination for every song in the corpus, let's focus on just a few to see if the hypothesis has some validity. If so, then we can think about tagging more artists in the corpus and testing the hypothesis more exhaustively.</p>
-<p>Here are the 30 artists with the most songs in the corpus. From this list, we'll extract a few artists who are obviously heavy on guitar or piano to compare.</p>
+## Chords and bigrams in guitar-driven and piano-driven songs
+
+<p>To check, if some bigrams are more common in the guitar-driven songs, we can simply compare them to the frequency of bigrams in the piano-driven songs. While the McGill Billboard Data does not distinguish the **instrument-driven** character of the songs, to test our hypothesis, we manually determine this character for a few obvious examples. For that, we take a look at the first 30 artists with the highest number of songs in the database. From this list, we extract a few artists who are obviously heavy on guitar or piano to compare.</p>
 
 ### Artists with the most songs in the dataset
-
+<div style = "width:45%; height:auto; margin: auto;">
 ```{r echo = FALSE, warning = FALSE, message = FALSE}
 
 # Finding 30 artists with the most songs in the corpus
@@ -283,20 +300,23 @@ bb_30_artists <- bb %>%
                  arrange(desc(n))
   
 # Displaying 30 artists with the most songs in the corpus
-kable(head(rename(bb_30_artists, 'Artist' = artist, 'Number of Songs' = n ), 34),
-      align = "cc") %>%
-      kable_styling(full_width = FALSE, position = "center", bootstrap_options = "striped", font_size = 14)
+datatable(head(rename(bb_30_artists, 'Artist' = artist, 'Number of Songs' = n ), 34),
+          options = list(pageLength = 5,
+          initComplete = htmlwidgets::JS(
+            "function(settings, json) {",
+            paste0("$(this.api().table().container()).css({'font-size': '", font.size, "'});"),
+              "}")))
 
 ```
-
+</div>
 
 ```{r echo = FALSE, warning = FALSE, message = FALSE}
 
 # Selection of artists who are heavy in piano or guitar
-tags <- tibble(artist = c('Abba', 'Billy Joel', 'Elton John', 'Stevie Wonder', 'Pet Shop Boys', 
-                          'The Rolling Stones', 'Eric Clapton', 'Jackson Browne', 'Led Zeppelin', 'Pink Floyd'), 
-              instrument = c('piano', 'piano', 'piano', 'piano', 'piano', 
-                             'guitar', 'guitar', 'guitar', 'guitar', 'guitar'))
+tags <- tibble(artist = c('Abba', 'Billy Joel', 'Elton John', 'Stevie Wonder',  
+                          'The Rolling Stones', 'Eric Clapton', 'The Beatles'), 
+              instrument = c('piano', 'piano', 'piano', 'piano', 
+                             'guitar', 'guitar', 'guitar'))
 
 # Creating a new dataframe bb_tagged that includes a new column instrument from tags
 bb_tagged <- bb %>% 
@@ -318,9 +338,8 @@ num_songs_instruments <- num_songs %>%
 
 <br>
 
-## 7. Tagging the corpus
-<p>There are relatively few artists in this list whose music is demonstrably "piano-driven," but we can identify a few that generally emphasize keyboards over guitar: Abba, Billy Joel, Elton John, Stevie Wonder and Pet Shop Boys totaling `r num_songs_instruments[2, 2]` songs in the corpus. There are many guitar-centered artists in this list, so for our test, we'll focus on three well known, guitar-heavy artists with a similar number of songs in the corpus: The Rolling Stones, Eric Clapton, Jackson Browne, Led Zeppelin, Pink Floyd (`r num_songs_instruments[1, 2]` songs).</p>
-<p>Once we've subset the corpus to only songs by these seven artists and applied the "piano" and "guitar" tags, we can compare the chord content of piano-driven and guitar-driven songs.</p>
+<p>From these 30 names we can easily identify some artists, which generally emphasize keyboards over guitar: Abba, Billy Joel, Elton John, and Stevie Wonder, representing a total of `r num_songs_instruments[2, 2]` songs in the database. Definitely guitar-heavy artists, with a similar total number of songs in the database are: The Beatels, Eric Clapton and The Rolling Stones (`r num_songs_instruments[1, 2]` songs). We add the "guitar" and "piano" tags to the subset of selected seven artists and compare chords and bigrams in the guitar-driven and piano-driven songs.</p>
+
 
 ### Selected guitar- and piano-driven artists
 
@@ -334,12 +353,10 @@ kable(rename(num_songs, 'Artist' = artist, 'Instrument' = instrument, 'Number of
 ``` 
 
 <br>
+To ensure comparability with the chart presenting the most popular chords in the circle of fifths and the 12 most common bigrams, we focus on these chords and bigrams, in order as in the first two charts.
+<br>
 
-## 8. Comparing chords in piano-driven and guitar-driven songs
-<p>Let's take a look at any difference in how common chords are in these two song groups. To clean things up, we'll just focus on the 13 chords most common in the McGill Billboard dataset and included in the circle of fifths.</p>
-<p>While we want to be careful about drawing any conclusions from such a small set of songs, we can see that the chords easiest to play on the guitar <em>do</em> dominate the guitar-driven songs, especially the first five from the circle of fifths. Similarly, "flat" chords (B-flat, F, D major) occur frequently in piano-driven songs, though two first are nearly absent from the guitar-driven songs.</p>
-<p>So with all the appropriate caveats, it seems like the instrument-based-harmony hypothesis does have some merit and is worth further examination.</p>
-
+### Chords in piano-driven and guitar-driven songs
 
 ```{r echo = FALSE, warning = FALSE, message = FALSE, fig.align = "center", fig.width = 8, fig.asp = 0.8}
 
@@ -385,8 +402,7 @@ chords_instruments
 
 <br>
 
-## 9. Comparing chord bigrams in piano-driven and guitar-driven songs
-<p>Since chord occurrence and chord bigram occurrence are naturally strongly tied to each other, it would not be a reach to expect that a difference in chord frequency would be reflected in a difference in chord bigram frequency. Indeed that is what we find. The chart presents the most common bigrams in order of appereance in the top 12 most common bigrams (the white-black chart). The overall low number of bigrams in piano-driven songs results from the higher number of bigrams involving another chords.</p>
+### Bigrams in piano-driven and guitar-driven songs
 
 ```{r echo = FALSE, warning = FALSE, message = FALSE, fig.align = "center", fig.width = 8, fig.asp = 0.8}
 
@@ -418,7 +434,7 @@ bigram_instruments <- ggplot(bigrams_guitar_piano, aes(x = bigram, y = n, fill =
                         theme_billboard() +
                         theme(axis.ticks.y = element_blank(),
                               plot.margin = unit(c(20, 40, 10, 0), "pt"),
-                              plot.title = element_text(hjust = 1.7,
+                              plot.title = element_text(hjust = -5,
                                                         margin = margin(b = 10, unit = "pt")),
                               plot.subtitle = element_text(margin = margin(b = 10, unit = "pt"))) +
                         labs(title = "Number of the most common bigrams in guitar und piano songs",
@@ -431,9 +447,21 @@ bigram_instruments
 
 <br>
 
-## 10. Conclusion
-<p>We set out asking if the degree to which a chord is "idiomatic" on an instrument affects how frequently it is used by a songwriter. It seems that is indeed the case. In a large representative sample of pop/rock songs from the historical Billboard charts, the chords most often learned first by guitarists and pianists are the most common. In fact, chords commonly deemed <em>easy</em> or <em>beginner-friendly</em> on <strong>both</strong> piano and guitar are far and away the most common in the corpus.</p>
-<p>We also examined a subset of 39 songs from seven piano- and guitar-heavy artists and found that guitarists and pianists tend to use different sets of chords for their songs. This was an extremely small (and likely not representative) sample, so we can do nothing more than hypothesize that this trend might carry over throughout the larger dataset. But it seems from this exploration that it's worth a closer look.</p>
-<p>There are still more questions to explore with this dataset. What about band-driven genres like classic R&amp;B and funk, where artists like James Brown and Chicago build chords from a large number of instruments each playing a single note? What about "progressive" bands like Yes and Genesis, where "easy" and "idiomatic" may be less of a concern during the songwriting process? And what if we compared this dataset to a collection of chords from classical songs, jazz charts, folk songs, liturgical songs?</p>
-<p>There's only one way to find out!</p>
+# 3. Conclusions
+<p> 
+* Our analysis shows that in a representative sample of pop songs form the McGill Billboard charts, inluding `r length(unique(artists$Artist))` artists and `r length(unique(bb$title))` songs, **chords most often learned first by guitarists and pianists are the most common**. These "beginner-friendly" C, G, A, D, E, F major chords are the most common in the McGill Billboard dataset. 
 
+* We also present chords and bigrams from a very small subset of artists, in which we can definitely define the guitar- and piano-driven character of their songs. We can see that guitarists and pianists apparently use a different set of chords. There are considerable differences in how frequently the chords from the outermost circle of fifths are played in the guitar- and piano-heavy songs. Although this subset is statistically not representative, our expolration suggests that this trend might occur in the larger dataset.
+
+* Using only a few basic functions from the `tidyverse` package it is possible to answer much more questions with the McGill Billboard dataset. It would be worth to explore the difference between band- and solo-driven songs or differences between sub-genre such as classical, folk, jazz or progressive rock; temporal differences or even to dive deeper in the theory of music and explore further variables. 
+</p>
+
+<br>
+
+# 4. References
+
+**John Ashley Burgoyne, Jonathan Wild, and Ichiro Fujinaga**, *‘An Expert Ground Truth Set for Audio Chord Recognition and Music Analysis’*, in Proceedings of the 12th International Society for Music Information Retrieval Conference, ed. Anssi Klapuri and Colby Leider (Miami, FL, 2011), pp. 633–38
+
+**John Ashley Burgoyne**, *‘Stochastic Processes and Database-Driven Musicology’* (PhD diss., McGill University, Montréal, Québec, 2012) 
+
+** Kris Shaffer**, *‘Wrangling and Visualizing McGill Billboard Chords Data’*, DataCamp Project
