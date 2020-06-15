@@ -18,4 +18,4 @@ The R portfolio is located at [residuality.com](https://www.residuality.com/port
 
 * [k-means Cluster Analysis Salary Potential](https://github.com/blumoestit/R_Projects/tree/master/2.%20k-means%20Cluster%20Analysis%20Salary%20Potential) - comparison of the recommendations from three different methods for determining the optimal number of clusters, application a k-means clustering analysis, and visualization the results.
 
-* [Cluster Analysis Bundestagswahl Berlin](https://github.com/blumoestit/R_Projects/tree/master/3.%20Cluster%20Analysis%20Bundestagswahl%20Berlin) - defines electorate groups in Berlin-Pankow district, based on federal election results in 2017.
+* [Cluster Analysis Bundestagswahl Berlin](https://github.com/blumoestit/R_Projects/tree/master/3.%20Cluster%20Analysis%20Bundestagswahl%20Berlin) - defines groups of polling stations based on the predominance of political preferences of inhabitants in Berlin-Pankow district, from federal election results in 2017.
