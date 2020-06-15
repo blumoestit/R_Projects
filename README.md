@@ -7,7 +7,7 @@ The R portfolio is located at [residuality.com](https://www.residuality.com/port
 
 ## Contents
 
-### Data Analysis and Visualisation
+### Data Analysis and Visualization
 
 * [Wrangling and Visualising MaGill Billboard Dataset](https://github.com/blumoestit/R_Projects/tree/master/1.%20Wrangling%20and%20Visualising%20MaGill%20Billboard%20Dataset) - an insight into a dataset designed for musicological studies.
 
