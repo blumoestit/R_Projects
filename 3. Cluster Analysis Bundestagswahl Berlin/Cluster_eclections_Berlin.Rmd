@@ -1,0 +1,511 @@
+---
+title: "Charakterisierung der Wählerschaft in Berlin mit Fokus auf die Wahllokale im Bezirk Pankow"
+subtitle: "Clusteranalyse der Bundestagswahl 2017"
+author: "Magdalena Blum-Oeste"
+date: "4/28/2020"
+output:
+   rmdformats::readthedown:
+    self_contained: true
+    thumbnails: false # if true then figures small as thumbnails
+    lightbox: true
+    gallery: false
+    highlight: tango
+    #highlight: github
+---
+<style>
+
+sidebar {
+    background-color: rgb(299, 43, 80);
+}
+
+#sidebar {
+    background: #000000;
+    background-color: #000000;
+    z-index: 200;
+    font-size: 16px;
+}
+
+p{
+    font-family: Clear Sans;
+    font-size:16px;
+    line-height:24px;
+    margin:0px 0px 12px 0px;
+}
+
+h1,h2,h3,h4,h5,h6,legend{
+    font-family: Clear Sans,Clear Sans,Clear Sans,sans-serif,sans-serif;
+    font-weight:700;
+    #color: #E52B50;
+}
+</style>
+
+# 1. Einführung
+Die Vorbereitung für das Superwahljahr 2021 in Berlin, in dem sowohl die Wahl zum BVV, Berliner Abgeordnetenhaus und Bundestag stattfinden, hat bereits begonnen. Eine zielgerechte Ansprache der potentiellen Wähler ist ein wichtiger Aspekt einer erfolgreichen Wahlkampagnie und setzt voraus gute Kenntnisse der demographischen Struktur sowie der politischen Präferenzen der Bürger im Wahlgebiet. Die folgende Analyse soll Einblicke in die Pankower Wählerschaft im Hinblick auf die Interessen der Freien Demokraten in Pankow geben. Ziel ist es, Gruppen von Wahllokalen zu finden, die möglichst homogene Wahlergebnisse aufweisen und zwischen den unterschiedlichen Gruppen möglichst heterogen bleiben. Es wird die Clusteranalyse angerwendet, um die Gebiete bzw. Wahllokale im Bezirk Pankow mit ähnlichen Wählerpräferenzen zu identifizieren und auf einer interaktiven Karte zu präsentieren.
+
+In der folgenden Clusteranalyse werden ausschließlich die Wahlergebnisse der Zweitstimmen der Bundestagswahl 2017 zusammengeführt. Einbezogen sind die Stimmen aus den einzelnen Wahllokallen für die sechs Bundestagsparteien (>5% auf Bundesebene) und der restlichen Parteien addiert als "Sonstige". Die Stimmen der Briefwahl sind ausgeschlossen, da sie aufgrund anderer räumlichen Zuteilng, den einzelnen Wahllokallen nicht direkt zugeordnet werden können.  
+
+Die Anwendungen der Clusteranalyse reichen von Marketing, Telekomunikation bis zu wissenschaftlichen Disziplinen wie Medizin, Soziologie, Psychologie usw. Bei den Untersuchungsobjekten kann es sich um Individuuen, Gegenstände, Länder oder andere Verwaltungseinheiten handeln. Das Verfahren hilft z.B. bei der Analyse der Kunden und als Ergebnis liefert homogene Kundengruppen (Kundensegmentierung), um durch Personalisierung ein effektiveres Kundenservice zu erreichen. Die feingranularen Daten auf der Ebene der einzelnen Wahllokale, der kleinsten Wahlregioneinheit, ermöglichen möglichst präzise Bestimmung der Wählerpräferenzen in den Ortsgebieten in Pankow. Diese Informationen können sowohl dem Bezirksverband Pankow als auch den Ortsverbänden (Prenzlauer Berg, Stadt Land Panke, Weißensee) nutzliche Erkenntnisse liefern. 
+
+```{r setup, include = FALSE}
+
+#Loading libraries  
+knitr::opts_chunk$set(echo = TRUE)
+  library(pacman)
+  p_load(tidyverse, cluster, DT, factoextra, forcats, GGally, kableExtra, mclust, NbClust, purrr, scales)
+  
+# Generating new ggplot theme
+theme_clustpankow <- function(base_size = 11,
+                      base_family = "Source Sans Pro",
+                      base_line_size = base_size / 170,
+                      base_rect_size = base_size / 170){
+  theme_minimal(base_size = base_size, 
+                base_family = base_family,
+                base_line_size = base_line_size) %+replace%
+    theme(
+          axis.line = element_line(color = "white", size = 0.5),
+          axis.title.x = element_text(color = "white", face = "bold", size = 14,
+                                    margin = margin(t = 20, b = 5, unit = "pt")),
+          axis.title.y = element_text(color = "white", face = "bold", size = 14, angle = 90,
+                                    margin = margin(l = 5, r = 20, unit = "pt")),
+          axis.text = element_text(color = "white", face = "bold"),
+          axis.ticks = element_line(size = 0.5, color = "grey"),
+          axis.ticks.length = unit(1, "mm"),
+          legend.position = "right",
+          legend.text = element_text(color = "white", face = "bold", size = 12),
+          legend.title = element_text(color = "white", face = "bold", size = 14),
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          panel.spacing.x = unit(10, "mm"),
+          plot.background = element_rect(fill = "black"),
+          plot.title = element_text(size = 16, color = "white", face = "bold", hjust = 0.5), 
+          plot.subtitle = element_text(size = 14, color = "white", face = "bold", hjust = 0.5), 
+          plot.caption = element_text(size = 10, color = "white", hjust = 1),
+          strip.background = element_rect(fill = "black"),
+          strip.text = element_text(colour = "white", size = 12, face = "bold", 
+                                    margin = margin(b = 10, unit = "pt")), 
+          
+      complete = TRUE
+    )
+}
+
+
+# Color pallete
+pal_clusterpankow <- c("#DB4172", "#00CC87", "#E266D3", "#0095CC")
+pal_parties <- c( "AfD" = "#009EE0", "CDU" = "#383838", "FDP" = "#ffed00", 
+                "SPD" = "#FF0000", "GRÜNE" = "#64A12D", "LINKE" = "#800080","Sonstige" = "grey")
+
+# Subtitle and caption in charts
+plot_subtitle <- "Pankow"
+plot_caption <- "Data: Universum AG, personal comm. | ggplot2: Dr. M. Blum-Oeste"
+
+```
+
+# 2. Methodik
+
+## Clusteranalyse
+Clusteranalyse, auch als Clustering bezeichnet, ist eine *unüberwachte* Methode des maschinellen Lernens (englisch: *unsupervised* learning), bei der ähnliche Objekte (Datenpunkte) in Gruppen unterteilt werden. Die Objekte werden in der Regel durch eine Menge von Atributen repräsentiert, in dieser Analyse durch die Anzahl der Stimmen für die Parteien. Die Gruppen werden als **Cluster** bezeichnet. 
+
+Die Clusteranalyse verwendet mathematische Algorithmen, um Gruppen ähnlicher Objekte, basierend auf den kleinsten Abweichungen zwischen den Objekten innerhalb jeder Gruppe zu ermitteln. Man möchte also eine große Datenmenge (z.B. 1779 Wahllokale in Berlin) durch eine kleinere (eine einstellige Anzahl von Cluster) ersetzen, die leichter zu interpretieren und zu handhaben ist, ohne dabei viele Informationen über die Daten zu verlieren. Es wird also versucht, aus dem vorhandenen Datensatz eine Struktur und Bedeutung zu erstellen. Clustering wird als *unüberwacht* angesehen, d.h. die Charakterisierung der Gruppen ist vorab nicht bekannt und keine im Voraus bekannte Zielwerte gegeben sind. Die Charakterisierung entsteht im Laufe des Analyse, im Gegensatz zur Klassifikation, bei der vorab Gruppen-Bezeichnungen definiert werden. 
+
+Ein zentraler und zugleich schwieriger Teil der Clusteranalyse ist die Bestimmung der optimalen Anzahl der Cluster. Die Ermittlung einer optimalen Clusterzahl spielt eine wesentliche Rolle und bedingt die Qualität der Ergebnisse. In dem Analyseverfahren stehen zwar zahlreiche mathematisch begründete Entscheidungskriterien, jedoch oft ergeben die verschiedenen Lösungen unterschiedliche Werte. Für die Auswahl der Clusterzahl wird daher eine Reihe von Methoden herangezogen. Die Deutlichkeit der Ergebnisse sowie das am häufigsten auftretende Ergebnis werden in Betracht gezogen. 
+
+## Datensatz
+
+Diese Clusternalyse berüht auf Zweitstimmen der Bundestagswahl 2017 im Bundesland Berlin, auf der Ebene der Wahllokale. 
+Das Berliner Wahlgebiet ist in 12 Bezirke, 1.779 Urnenwahlbezirke und 718 Briefwahlbezirke eingeteilt. In jedem Urnenwahlbezirk gibt es ein Wahllokal mit einem Wahlvorstand (Wahlgebietseinteilung, berlin.de). Ein Wahllokal entspricht dem `polingarea_number` in der Datei und wird als eine 5-stellige Zahl, mit einem Zusatz "W" (Wahllokal, `pollingarea_type`='regular') an der dritten Stelle angegeben. Die zwei ersten Ziffern bezeichnen die Bezirksnummer der Stadt Berlin, die drei letzten Ziffer den Urnenwahlbezirk. Die Numerierung der Briefwahlgebiete (`pollingarea_type`='postal') unterliegt anderer Notation und wird an der Stelle nicht näher angegenagen. 
+
+### Einblick in die Rohdaten, Bundestagswahl 2017, Berlin
+```{r loaddata, echo = FALSE, warning = FALSE, message = FALSE}
+
+# Reading in the Bundestagswahl data saved on github
+btw17_Berlin <- read_csv('https://raw.githubusercontent.com/blumoestit/R_Projects/master/3.%20Cluster%20Analysis%20Bundestagswahl%20Berlin/Data/nat17_Berlin.csv')
+
+# Taking a look at the first rows in btw17_Berlin
+btw17_Berlin_head <- btw17_Berlin %>% filter(pollingarea_type == "regular") %>% head(7)
+  
+kable(btw17_Berlin_head#, 
+      #caption = "Sample of Billboard chords data table"
+      ) %>%
+      kable_styling(full_width = FALSE, position = "left", bootstrap_options = "striped", font_size = 14)
+
+```
+
+
+Die Datei wird auf die Attribute reduziert, die für Clusteranalyse und Erstellung einer Karte notwendig sind. Als Attribute der Wahllokale werden also die Anzahl der abgegebenen Stimmen für die Partien AfD, CDU, FDP, GRÜNE, LINKE und SPD einbezogen, sowie der Prteien, die Bundesweit unter 5% der Zewitstimmen lagen, summiert zu "Sonstige". 
+
+### Einblick in die ersten Spalten der Tabelle verwendet in der CLusteranalyse. Die Zahlen repräsentieren Anzahl der Zweitstimmen in Wahllokalen
+```{r dataframe, echo = FALSE, warning = FALSE, message = FALSE}
+
+# Remove DE from party names
+names(btw17_Berlin) <- gsub("DE-", "", names(btw17_Berlin))
+
+# Select main parties and sum other as "Sonstige"
+btw17_to_cluster <- btw17_Berlin %>% filter(pollingarea_type == "regular") %>%
+                mutate(Sonstige = select(.,12:45, -AfD, -CDU, -FDP, -GRÜNE, -LINKE, -SPD) %>% rowSums()) %>%
+                select(7, 3, AfD, CDU, FDP, GRÜNE, LINKE, SPD, Sonstige) %>% 
+                rename(Wahllokal = pollingarea_number)
+
+# Data frame to numeric matrix
+## numbers only
+btw17_matrix <- btw17_to_cluster %>% select(-1:-2) %>% 
+                data.matrix()
+## with row names
+btw17_matrix2 <- as.matrix(btw17_to_cluster)
+
+## We don't need to scale the variables because all are the same scale (number of votes)
+
+btw17_matrix_scaled <- scale(btw17_matrix)
+
+# Show the table prepared for clustering analysis
+
+kable(head(btw17_to_cluster, 7)#, 
+      #caption = "Sample of Billboard chords data table"
+      ) %>%
+      kable_styling(full_width = FALSE, position = "left", bootstrap_options = "striped", font_size = 14)
+
+```
+
+# 3. Anzahl der charakteristischen Wählergruppen (Cluster)
+
+Der bedutsamste Schritt in der Wählerschaft Analyse ist die Bestimmung der Anzahl der verschiedenen Wählergruppen.
+Das basiert auf Methoden der Clusteranalyse
+
+* Elbow (scree plot)
+* Silhouette 
+* Lückenanalyse (Gap Statistic)
+* Endliche Gaußsche Mischungsmodellierung (finite Gaussian mixture modelling)
+
+```{r elbowsildata, echo = FALSE, warning = FALSE, message = FALSE}
+
+## Create a funciton to determine optimal k in elbow and silhouette plot
+tot_withinss <- map_dbl(1:10, function(k) {
+  model <- kmeans(x = btw17_matrix, centers = k)
+  model$tot.withinss
+})
+    
+sil_width_pam <- purrr::map_dbl(2:10, function(k){
+  model <- pam(x = btw17_matrix, k = k)
+  model$silinfo$avg.width
+})
+  
+## Create df for the k = 10  
+ elbow_df_baseR <- data.frame(k = 1:10,
+                              parameter = tot_withinss)  %>% #parameter = tot_withins
+                   mutate(k = factor(k), method = "kmeans()")
+
+ sil_width_df_pam <- data.frame(k = 1:10,
+                               parameter = c(0, sil_width_pam)) %>% #parameter = sil_width
+                    mutate(k = factor(k), method = "pam()")
+
+## Run the fviz_nbclust() from factoextra package with the kmeans() and pam() "silhouette"
+elbow_df_factoextra <- fviz_nbclust(btw17_matrix, FUNcluster = kmeans, method = "wss")
+
+silhouette_df_factoextra <- fviz_nbclust(btw17_matrix, FUNcluster = kmeans, method = "silhouette")
+
+# Merge both methods into one data frame
+## wss
+elbow_two_methods <- elbow_df_factoextra[[1]] %>%
+                                  rename("k" = "clusters", "parameter" = "y") %>%
+                      mutate(method = "fviz_nbclust()") %>%
+                      bind_rows(elbow_df_baseR) 
+## silhouette
+sil_two_methods <- silhouette_df_factoextra[[1]] %>%
+                      rename("k" = "clusters", "parameter" = "y") %>%
+                      mutate(method = "fviz_nbclust()") %>%
+                      bind_rows(sil_width_df_pam) 
+
+# Create ggplot function
+  # dat: elbow_two_methods method: "tot_withinss"
+  # dat: sil_two_methods method: "sil_width"
+
+k_optimal <- 4  #value recognized from charts
+
+optimal_cluster <- function(dat, met, nk){
+  
+  ylab <- if (met == "tot_wss") {
+    "Gesamtsumme der Quadrate \ninnerhalb des Clusters"
+  } else if (met == "sil_width") {
+    "Durchschnittliche Silhouette Breite"
+  } else if (met == "gap") {
+    "Gap statistic"
+  } else {
+    ""
+  }
+  
+  max_y <- if (met == "tot_wss") {
+    max(elbow_two_methods$parameter)
+        } else if (met == "sil_width") {
+    max(sil_two_methods$parameter)
+        } else if (met == "gap") {
+          max(gap_df_cluster$parameter)
+        } else {
+          ""
+        }
+  
+  ggplot(dat, aes(k, parameter, group = method, color = method)) +
+       geom_vline(xintercept = nk, linetype = "dashed",
+               size = 1, color = "white") +
+       geom_point(size = 3) +
+       geom_line() +
+       scale_x_discrete(breaks = pretty_breaks(n = 11)) +
+       scale_color_manual(values = c("#DB4174", "#0095CC")) +
+       theme_clustpankow() +
+       theme(panel.grid.major.x = element_blank(),
+            plot.margin = margin(20, 20, 20, 20, "pt")) +
+       geom_text(aes(x = nk, y = max_y,
+                    label = "Optimale Anzahl der Cluster"),
+                    colour = "white", angle = 0, hjust = -0.1)+
+        xlab("Anzahl der Cluster") +
+        ylab(ylab)
+}
+
+```
+
+
+fviz_nbclust(): Dertemines and visualize the optimal number of clusters using different methods: within cluster sums of squares, average silhouette and gap statistics.
+
+## Elbow Methode
+
+Diese Methode...
+
+### Ein "elbow plot" - eine Entscheidungsgrundlage für die Anzahl der Cluster aus k-Means-Algorithmus.
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+
+ optimal_cluster(elbow_two_methods, "tot_wss", k_optimal)
+```
+
+
+## Silhouette Methode
+
+Diese Methode...
+
+### Optimale Anzahl der Cluster aus der Silhouette Methode mit fviz_nbclust() und pam()
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+optimal_cluster(sil_two_methods, "sil_width", k_optimal)
+```
+
+
+### Optimale Anzahl der Cluster aus der Silhouette Methode mit eclust() aus factoextra package
+```{r silhouette2, echo = FALSE, warning = FALSE, message = FALSE}
+
+# Visual Enhancement of Clustering Analysis
+enhanced_kmean <- eclust(btw17_matrix, "kmeans", graph = FALSE)
+
+# Visualize silhouette with ggplot
+fviz_silhouette(enhanced_kmean, palette = pal_clusterpankow,
+             ggtheme = theme_clustpankow())
+
+```
+
+<!-- ### Optimale Anzahl der Cluster aus der Silhouette Methode mit silhouette() aus cluster package -->
+<!-- ```{r silhouette3, echo = FALSE, warning = FALSE, message = FALSE} -->
+
+<!-- #Clusters silhouette plot with pam() and silhouette() from cluster package -->
+<!-- btw17_to_sil <- btw17_to_cluster %>% select(-1:-2) -->
+<!-- #btw17_to_silm <- as.matrix(btw17_to_sil) -->
+<!-- sil_width_to <- pam(btw17_to_sil, k = 4) -->
+<!-- sil_width_toplot <- silhouette(sil_width_to) -->
+
+<!-- #plot(sil_width_toplot) -->
+
+<!-- #Plot figure in file because silhouette() does not show data > 200 rows -->
+<!--   pdf('SilFig5.pdf') -->
+<!--   plot(sil_width_toplot, col = c("#DB4172", "#00CC87", "#E266D3", "#0095CC")) -->
+<!--   dev.off() -->
+
+<!-- ``` -->
+
+
+<!-- ```{r imageSil, echo = FALSE, message = FALSE, fig.align = 'left'} -->
+<!-- knitr::include_graphics("/Users/magdalenablum-oeste/Google Drive/GitHubMBO/R_Projects/3. Cluster Analysis Bundestagswahl Berlin/SilFig.png") -->
+<!-- ``` -->
+
+## Lückenanalyse (Gap Statistic)
+
+Diese Methode...
+
+### Optimale Anzahl der Cluster aus der Lückenanalyse aus cluster package
+```{r gapstatistics, echo = FALSE, warning = FALSE, message = FALSE}
+
+# Use the clusGap() to apply the Gap Statistic Method
+gap_stat <- clusGap(btw17_matrix_scaled, FUN = kmeans, nstart = 25, K.max = 10, B = 10)
+
+# Extract recommended number of clusters
+k_optimal_gap <- maxSE(gap_stat$Tab[, "gap"], gap_stat$Tab[, "SE.sim"], method="Tibs2001SEmax")
+
+# Create a data frame for ggplot
+gap_df_cluster <- data.frame(k = 1:10,
+                              parameter = gap_stat$Tab[,3])  %>% 
+                   mutate(k = factor(k), method = "clusGap()")
+
+# # Use the fviz_gap_stat function to vizualize the results
+#gap_stat_method <- fviz_gap_stat(gap_stat)
+
+# View the plot
+optimal_cluster(gap_df_cluster, "gap", k_optimal_gap)
+
+```
+
+
+## NbClust() 
+A fourth alternative is to use the NbClust() function, which provides 26 indices for choosing the best number of clusters.
+Or We Can Use One Line of Code to Test 30 Different Methods at Once
+NbClust Package provides 30 indices for determining the number of clusters, distance measures, and clustering methods.
+  26 indices for determining the number of clusters will be analysed, using ward method and euclidean distance. All statistics will be calculated using NbCLust package.
+  
+  According to the majority rule, the best number of clusters is  4.
+
+Firstly, graphical methods will be used - Hubert (Hubert and Arabie 1985) and D index (Lebart et al. (2000).
+
+### Optimale Anzahl der Cluster aus NbClust package
+```{r nbclust1, echo = FALSE, warning = FALSE, message = FALSE, results = 'hide'}
+
+# # Use the NbClust() to obtain number of clusters from 26 models
+nbclust_stat <- NbClust(data = btw17_matrix, distance = "euclidean", method = "kmeans",
+                        min.nc = 2, max.nc = 10) # min and max number of clusters
+
+# nbclust_stat_dindex <- NbClust(data = btw17_matrix, distance = "euclidean", method = "kmeans",
+#                         min.nc = 2, max.nc = 10, index = "dindex") 
+# nbclust_stat_dindex
+```
+
+```{r nbclust2, echo = FALSE, warning = FALSE, message = FALSE}
+nbclust_number_cluster <- tibble::as_tibble(nbclust_stat$Best.nc[1, ])
+
+ggplot(nbclust_number_cluster, aes(value)) +
+       geom_bar(fill = "#DB4172") +
+       scale_x_continuous(breaks = pretty_breaks(n = 11)) +
+       scale_y_continuous( expand = c(0, 0, 0, 1)) +
+       theme_clustpankow() +
+       theme(panel.grid.major.x = element_blank(),
+             plot.margin = margin(20, 20, 20, 20, "pt")) +
+         ggtitle("Optimale Anzahl der Cluster aus 26 Modellen") +
+         xlab("Anzahl der Cluster") +
+         ylab("Frequency among all indices")
+```
+
+
+# 4. Charakterisierung der Wählergruppen (Cluster)
+
+## Analyse der Verteilung
+
+### Korelationen
+```{r nbclust3, echo = FALSE, warning = FALSE, message = FALSE}
+
+kmeans_4_cluster <- kmeans(x = btw17_matrix, centers = 4, iter.max = 20)
+
+btw17_df <- btw17_to_cluster %>% select(-1:-2) %>% 
+            bind_cols(as_tibble(kmeans_4_cluster$cluster))
+
+corr_cluster <- function(columns){
+  ggpairs(btw17_df, mapping = aes(color = as.character(value)),
+        columns = columns, 
+        lower = list(continuous = wrap("smooth", alpha = 0.3, size = 0.2)),
+        upper = list(continuous = wrap("cor", size = 2.5))) + 
+  scale_color_manual(values = pal_clusterpankow) +
+  scale_fill_manual(values = c(alpha("#DB4172", 0.7), alpha("#00CC87", 0.7), alpha("#E266D3", 0.7),alpha("#0095CC", 0.7))) +
+  theme_clustpankow() +
+  theme(axis.text = element_text(size = 6)
+        )
+}
+
+corr_cluster(c(3, 1, 2))
+
+corr_cluster(c(3:5))
+
+corr_cluster(c(3, 6, 7))
+
+
+```
+
+## Zweitestimmen im Vergleich mit Berlin und Pankow
+
+### Verhleich der CLuster mit den Wahlergebnissen in Berlin und Pankow
+```{r nbclust4, echo = FALSE, warning = FALSE, message = FALSE}
+parties_means <- as.data.frame(kmeans_4_cluster$centers) %>% 
+  mutate(unit = as.character(row_number())) %>% 
+  gather(key = Party, value = votes, -unit) %>% 
+  group_by(unit) %>% 
+  mutate(percentage = votes/sum(votes)) 
+
+# Resultd for Berlin and Pankow
+Pankow_Berlin <- data.frame(Party = rep(c("AfD", "CDU", "FDP", "GRÜNE", "LINKE", "SPD", "Sonstige"), 2), 
+                            unit = c(rep("Berlin", 7), rep("Pankow", 7)),
+                            percentage = c(0.12, 0.227, 0.089, 0.126, 0.188, 0.179, 0.071, 
+                                           0.125, 0.198, 0.066, 0.143, 0.235, 0.156, 0.077),
+                            votes = rep(0 ,14))
+                            
+# Join both tables
+parties_percentages <- parties_means %>% bind_rows(Pankow_Berlin)
+
+parties_percentages$Party <- factor(parties_percentages$Party, levels = c("AfD", "CDU", "FDP", "GRÜNE", "LINKE", "SPD", "Sonstige"))
+parties_percentages$unit <- factor(parties_percentages$unit, levels = c("Berlin", "Pankow", "1", "2", "3", "4"))
+                                
+# Create chart of % votes for parties 
+  ggplot(parties_percentages, aes(fct_rev(unit), percentage, fill = fct_rev(Party))) +
+       geom_col(width = 0.8) +
+       coord_flip() +
+       scale_x_discrete() +
+       scale_y_continuous(expand = c(0, 0, 0, 0), labels = percent_format(accuracy = 1), 
+                          breaks = c(0, 0.25, 0.5, 0.75, 1)) +
+  scale_fill_manual(values = pal_parties, guide = guide_legend(reverse = TRUE)) +
+       theme_clustpankow() +
+       theme(panel.grid.major.x = element_line(size = 0.5, linetype = "solid", color = "grey"),
+             plot.margin = margin(20, 20, 20, 20, "pt")) +
+         labs(fill = "", 
+              x = "Cluster,  Bezirk,  Stadt",
+              y = "% der Zweitestimmen")
+
+# Create table with percentage of means in clusters
+parties_percentage_table <- parties_percentages %>% mutate(percentage = scales::percent(percentage, accuracy = 0.1)) %>% 
+  select(-votes) %>% 
+  spread(Party, percentage) %>% 
+  rename("Cluster" = "unit")
+
+kable(parties_percentage_table#, 
+      #caption = "% der Zweitstimmen"
+      ) %>%
+      kable_styling(full_width = FALSE, position = "left", bootstrap_options = "striped", font_size = 14)
+
+```
+## Räumliche Anordung der Cluster in Berlin und Pankow
+
+### Karte
+
+```{r data_to_map, echo = FALSE, warning = FALSE, message = FALSE}
+
+btw17_to_map <- btw17_to_cluster %>% 
+            bind_cols(as_tibble(kmeans_4_cluster$cluster)) %>% 
+            rename("Cluster" = "value") %>% 
+            mutate(votes_total = rowSums(select(., AfD:Sonstige))) %>% 
+            mutate(AfD_perc = AfD/votes_total, CDU_perc = CDU/votes_total, FDP_perc = FDP/votes_total,
+                   GRÜNE_perc = GRÜNE/votes_total, LINKE_perc = LINKE/votes_total, SPD_perc = SPD/votes_total, 
+                   Sonstige_perc = Sonstige/votes_total, Wahllokal = as.character(Wahllokal)) %>%
+            select(1:2, Cluster, votes_total, everything())
+
+btw17_to_map$Wahllokal <- gsub("W", "", btw17_to_map$Wahllokal)
+write_csv(btw17_to_map, "/Users/magdalenablum-oeste/Google Drive/GitHubMBO/R_Projects/3. Cluster Analysis Bundestagswahl Berlin/btw17_to_map_clusters.csv")
+
+```
+
+
+<!-- ##### Maybe add this at the end as an additional method but with more complicated mathematical background -->
+
+
+<!-- <!-- ## Endliche Gaußsche Mischungsmodellierung (finite Gaussian mixture modelling) --> -->
+
+<!-- <!-- Diese Methode... --> -->
+
+<!-- <!-- ### Optimale Anzahl der Cluster aus der Endlichen Gaußsche Mischungsmodellierung aus mclust package --> -->
+<!-- <!-- ```{r mclust, echo = FALSE, warning = FALSE, message = FALSE} --> -->
+<!-- <!-- mclust_model <- Mclust(btw17_to_sil) --> -->
+<!-- <!-- #mclust_model --> -->
+<!-- <!-- plot(mclust_model) --> -->
+
+<!-- <!-- ``` --> -->
+
+
+
+
+
+
