@@ -11,6 +11,8 @@ The R portfolio is located at [residuality.com](https://www.residuality.com/port
 
 * [Wrangling and Visualising MaGill Billboard Dataset](https://github.com/blumoestit/R_Projects/tree/master/1.%20Wrangling%20and%20Visualising%20MaGill%20Billboard%20Dataset) - an insight into a dataset designed for musicological studies.
 
+* [Leaflet Map Youth Centres Pankow Berlin](https://github.com/blumoestit/R_Projects/tree/master/4.%20Leaflet%20Map%20Youth%20Centres%20Pankow%20Berlin) - Map of Pankow district in Berlin showing location of Youth Centres on polygons representing number of children and adolescents (6 - 18 years) in admonistrative planing areas.
+
 
 ### Machine Learning
 
