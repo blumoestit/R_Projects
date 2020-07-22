@@ -102,7 +102,7 @@ pal_parties <- c( "AfD" = "#009EE0", "CDU" = "#383838", "FDP" = "#ffed00",
 ```
 
 # 2. Methodik
-### 2.1. Clusteranalyse
+## 2.1. Clusteranalyse
 Clusteranalyse, auch als Clustering bezeichnet, ist eine *unüberwachte* Methode des maschinellen Lernens (englisch: *unsupervised* learning), bei der ähnliche Objekte (Datenpunkte) in Gruppen unterteilt werden. Die Objekte werden in der Regel durch eine Menge von *Attributen* repräsentiert, in dieser Analyse durch die Anzahl der Stimmen für die Parteien in Berliner Wahllokalen. Die Gruppen werden als **Cluster** bezeichnet. 
 
 Die Clusteranalyse verwendet mathematische Algorithmen, um die Gruppen ähnlicher Objekte, basierend auf den kleinsten Abweichungen zwischen den Objekten innerhalb jeder Gruppe zu ermitteln. Man möchte also eine große Datenmenge (z.B. 1779 Wahllokale in Berlin) durch eine kleinere ersetzen, die leichter zu interpretieren und zu handhaben ist, ohne dabei Informationen über die Daten zu verlieren. Es wird also versucht, aus dem vorhandenen Datensatz eine Struktur und Bedeutung zu erstellen. Die Charakterisierung der Gruppen ist vorab nicht bekannt und es sind keine im Voraus bekannten Zielwerte gegeben - deswegen wird Clustering  als *unüberwacht* bezeichnet. Die Kennzeichnung entsteht im Laufe der Analyse, im Gegensatz zur Klassifikation, bei der vorab Gruppen-Bezeichnungen definiert werden. 
@@ -111,7 +111,7 @@ Ein zentraler und zugleich schwieriger Teil der Clusteranalyse ist die Bestimmun
 
 Alle Analysen werden mit `R` - einer *open source* Programmiersprache für statistische Analysen und Datenvisualisierung durchgeführt.
 
-### 2.2. Datensatz
+## 2.2. Datensatz
 Diese Clusternalyse beruht auf Zweitstimmen der Bundestagswahl 2017 im Bundesland Berlin, auf der Ebene der Wahllokale. 
 Das Berliner Wahlgebiet ist in 12 Bezirke, 1779 Urnenwahlbezirke und 718 Briefwahlbezirke eingeteilt. In jedem Urnenwahlbezirk gibt es ein Wahllokal mit einem Wahlvorstand ([Wahlgebietseinteilung, berlin.de](https://www.berlin.de/wahlen/wahlen/bundestagswahl-2017/wahlgebietseinteilung/artikel.750582.php)). Ein Wahllokal entspricht der `polingarea_number` in der Datei und wird als eine 5-stellige Zahl, mit einem Zusatz "W" (Wahllokal, `pollingarea_type`='regular') an der dritten Stelle angegeben. Die zwei ersten Ziffern bezeichnen die Bezirksnummer der Stadt Berlin, die drei letzten Ziffern den Urnenwahlbezirk. Die Nummerierung der Briefwahlgebiete (`pollingarea_type`='postal') unterliegt einer anderen Notation und ist an dieser Stelle nicht weiter relevant. 
 
@@ -263,7 +263,7 @@ optimal_cluster <- function(dat, met, nk){
 <br>
 
 
-### 3.1. Ellbogen-Kriterium
+## 3.1. Ellbogen-Kriterium
 Die wahrscheinlich bekannteste Methode ist die Ellbogenmethode, bei der die Gesamtsumme der quadrierten Abweichungen der Entfernung der Datenpunkte von dem Cluster-Zentroiden (engl. **w**ithin-cluster **s**um of **s**quare, *wss*), für eine Anzahl von Clustern berechnet und grafisch dargestellt wird. Es soll die Anzahl der Cluster ausgewählt werden, die bei einem Hinzufügen eines weiteren Clusters die *wss*-Werte nicht wesentlich verbessert. In der Kurve zeigt sich das als Änderung der Neigung von steil nach flach ("Ellbogen"). Die Position der Biegung im Diagramm wird als Ellbogen-Kriterium bezeichnet und steht als Indikator der optimalen Clusterzahl. 
 
 Die *wss*-Werte werden für jede Clusterzahl von 1 bis 10, mittels des k-Means-Algorithmus mit der **baseR** Funktion `kmeans()` und der Funktion `fviz_nbclust()` aus dem **factoextra** package in R berechnet. Die Position des Ellbogens, damit auch die Clusterzahl, wird in der Kurve durch die vertikale Linie angezeigt. 
@@ -276,7 +276,7 @@ Die *wss*-Werte werden für jede Clusterzahl von 1 bis 10, mittels des k-Means-A
 <br><br>
 
 
-### 3.2. Silhouetten-Koeffizient
+## 3.2. Silhouetten-Koeffizient
 Eine weitere Visualisierung, mit deren Hilfe die optimale Anzahl von Clustern ermittelt werden kann, wird als Silhouette-Methode bezeichnet. Die Silhouette bestimmt die Qualität der Cluster, indem ein Koeffizient zwischen -1 und 1 bestimmt wird. Dieser zeigt wie gut jede Beobachtung (hier ein Wahllokal) im jeweiligen Cluster liegt. Die Methode berechnet die durchschnittliche Silhouette der Beobachtungen für verschiedene Werte der Clusterzahl. Ein hoher durchschnittlicher Silhouetten-Koeffizient weist auf eine gute Clusterbildung hin. Die optimale Anzahl von Clustern ist diejenige, die die durchschnittliche Silhouette über einen Bereich möglicher Clusterzahlen maximiert.
 
 Die Werte der Silhouetten-Koeffizienten für jede Clusterzahl von 1 bis 10 werden mit der Funktion `fviz_nbclust()` aus dem **factoextra** package and `pam()` aus dem **cluster** package in R berechnet. Ein maximaler Wert ergibt sich bei der Clusterzahl 4. 
@@ -309,7 +309,7 @@ fviz_silhouet
 <br><br>
 
 
-### 3.3. Lückenanalyse (Gap Statistic)
+## 3.3. Lückenanalyse (Gap Statistic)
 Die Lückenstatistik (engl. *gap statistic*) von [Tibshirani et al. (2001)](https://web.stanford.edu/~hastie/Papers/gap.pdf) vergleicht die Summe der durchschnittlichen Streuung (engl. *within intra-cluster variation*) innerhalb des Clusters für eine zunehmende Anzahl von Clustern zu einer Referenzverteilung ohne offensichtlichen Clusterbildung. Der Wert, der die Lückenstatistik maximiert, stellt die optimale Clusterzahl dar. Der maximale Wert ergibt die größte Lückenstatistik und bedeutet, dass die Clusterstruktur sich am weitesten von der zufälligen, gleichmäßigen Referenzverteilung unterscheidet.
 Die Werte der Lückenstatistik und die optimale Anzahl der Cluster werden mit der `clusGap()`Funktion aus dem **cluster** package ermittelt. Diese Methode schlägt für unseren Datensatz nur 1 Cluster vor. Damit gibt die Methode keinen Hinweis darauf, ob der Datensatz überhaupt in Cluster unterteilt werden soll. 
 
@@ -336,7 +336,7 @@ optimal_cluster(gap_df_cluster, "gap", k_optimal_gap)
 <br><br>
 
 
-### 3.4. NbClust() 
+## 3.4. NbClust() 
 Die vierte Alternative ist die `NbClust()` Funktion aus dem NbClust package in R. Die Funktion umfasst 26 Methoden zur Bestimmung der optimalen Clusterzahl und schlägt die Lösung vor, welche am häufigsten auftritt. Die Details können in [Charrad et al. (2014)](https://www.jstatsoft.org/article/view/v061i06) nachgelesen werden. 
 
 Zwei von den 26 Methoden, der Hubert-Index und der D-Index, sind rein grafische Methoden (siehe Diagramme unten). Die optimale Anzahl von Clustern befindet sich in einem „Ellbogenpunkt“, nach dem der entsprechende statistische Wert in der zweiten Differenz (ein Wert aus der Differentialrechnung) stark abnimmt. Beide Methoden zeigen einen Ellbogen für unseren Datensatz bei der Clusterzahl 4.
@@ -374,7 +374,7 @@ ggplot(nbclust_number_cluster, aes(value)) +
 <br><br>
 
 
-### 3.5. Clustertendenz des Datensatzes - die Hopkins-Statistik
+## 3.5. Clustertendenz des Datensatzes - die Hopkins-Statistik
 ```{r hopkins, echo = FALSE, warning = FALSE, message = FALSE}
 hopkins <- factoextra::get_clust_tendency(data = btw17_matrix, n = 50, graph = FALSE)
 hopkins_statistik <- round(hopkins$hopkins_stat, 2)
@@ -390,7 +390,7 @@ Die meisten Methoden zur Feststellung der Anzahl von Clustern zeigen vier Cluste
 <br>
 
 # 4. Die Cluster als  Wählergruppen
-### 4.1. Wahlergebnisse in Clustern im Vergleich zu Berlin und Pankow
+## 4.1. Wahlergebnisse in Clustern im Vergleich zu Berlin und Pankow
 Das k-Means-Clustering [(MacQueen, 1967)](https://www.cs.cmu.edu/~bhiksha/courses/mlsp.fall2010/class14/macqueen.pdf) (engl. mean = Mittelwert) ist einer der am häufigst verwendeten *unüberwachten* Algorithmen für maschinelles Lernen zum Partitionieren eines Datensatzes in *k* Gruppen (bzw. *k* Clustern), wobei *k* die Anzahl der vom Analysten vorgegebenen Cluster darstellt. Es klassifiziert Objekte in mehrere Cluster, sodass diese Objekte innerhalb desselben Clusters so ähnlich wie möglich sind (hohe Ähnlichkeit innerhalb der Gruppe), während Objekte aus verschiedenen Clustern so unterschiedlich wie möglich sind. Beim k-Means-Clustering wird jeder Cluster durch sein Zentroid (oder Schwerpunkt, engl. centroid) dargestellt, das dem Mittelwert der dem Cluster zugewiesenen Punkte entspricht.
 
 Die Schwerpunkte der Cluster werden durch die gleichen Attribute wie der gesamte Datensatz repräsentiert, in unserer Analyse sind das die Mittlere Anzahl der Zweitstimmen, welche die Wahlergebnisse darstellen. Das Balkendiagramm zeigt, wie stark die Unterschiede zwischen den vier Clustern sind und wie sie im Vergleich mit den Wahlergebnissen im Bezirk Pankow und der Stadt Berlin stehen.
@@ -502,7 +502,7 @@ btw17_to_cluster_amount_table %>% ggplot(aes(x = Cluster, y = n_percent, fill = 
 <br><br>
 
 
-### 4.2. Die Karten 
+## 4.2. Die Karten 
 Die folgende Karten zeigen die Ergebnisse unserer Clusteranalyse (interaktiv) sowie der Bundestagswahl 2017 mit dem Fokus auf den Bezirk Pankow. Ein Vergleich der Anordnung der Cluster mit den Ergebnissen für die sechs Bundestagsparteien zeigt ein konsistentes Bild. Die "Muster" der Cluster überlappen sich mit den Intensitäten der Farben, die die Ergebnisse der Zweitstimmen repräsentieren.
 
 
