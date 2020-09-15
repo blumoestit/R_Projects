@@ -26,3 +26,8 @@ Any set of data can be graphed many ways and varying views allow us to see diffe
 * [k-means Cluster Analysis Salary Potential](https://github.com/blumoestit/R_Projects/tree/master/2.%20k-means%20Cluster%20Analysis%20Salary%20Potential) - a comparison of the recommendations from three different methods for determining the optimal number of clusters, application a k-means clustering analysis, and visualization the results.
 
 * [Cluster Analysis Bundestagswahl Berlin](https://github.com/blumoestit/R_Projects/tree/master/3.%20Cluster%20Analysis%20Bundestagswahl%20Berlin) - defines groups of polling stations based on the predominance of political preferences of inhabitants in Berlin-Pankow district, from federal election results in 2017.
+
+
+### Shiny App
+
+* [Personality Survey in Shiny App](https://blumoestit.shinyapps.io/Personality_Survey_demo-2/) - (link to the demo) a complete personality survey built in a *shinydashboard*. The survey is based on the HEXACO Personality Inventory-Revised (HEXACO-PI-R) which will be expanded by the finametrica questionnaire. The survey is in German and serves as the basis for a study from the financial sector. The responds are saved in a Google speadsheet.
